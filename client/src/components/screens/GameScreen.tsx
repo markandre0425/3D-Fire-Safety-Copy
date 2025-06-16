@@ -19,19 +19,26 @@ export default function GameScreen() {
   
   // Check for game over conditions
   useEffect(() => {
-    // Game over if health reaches zero
-    if (health <= 0) {
-      console.log("Game over: Player health depleted");
-      end();
-    }
+    // Only check game over conditions after a short delay to allow the level to initialize
+    const gameOverCheckDelay = setTimeout(() => {
+      // Game over if health reaches zero
+      if (health <= 0) {
+        console.log("Game over: Player health depleted");
+        end();
+      }
+      
+      // Game over if time runs out
+      if (levelTime <= 0 && levelTime !== undefined) {
+        console.log("Game over: Time ran out");
+        end();
+      }
+    }, 1000); // 1 second delay before checking game over conditions
     
-    // Game over if time runs out
-    if (levelTime <= 0) {
-      console.log("Game over: Time ran out");
-      end();
-    }
-    
-    // Level complete
+    return () => clearTimeout(gameOverCheckDelay);
+  }, [health, levelTime, end]);
+  
+  // Handle level completion separately
+  useEffect(() => {
     if (isLevelComplete) {
       console.log("Level completed!");
       
@@ -50,7 +57,7 @@ export default function GameScreen() {
         setTimeout(() => end(), 2000);
       }
     }
-  }, [health, levelTime, isLevelComplete, end, startLevel]);
+  }, [isLevelComplete, end, startLevel]);
   
   return (
     <>
@@ -80,3 +87,4 @@ export default function GameScreen() {
     </>
   );
 }
+

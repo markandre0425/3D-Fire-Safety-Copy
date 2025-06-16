@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
-import { PlayerState } from "../types";
+import { PlayerState, InteractiveObjectType } from "../types";
 import { PLAYER_CONSTANTS } from "../constants";
 
 interface PlayerStateStore extends PlayerState {
@@ -16,10 +16,13 @@ interface PlayerStateStore extends PlayerState {
   depleteOxygen: (amount: number) => void;
   replenishOxygen: (amount: number) => void;
   resetPlayer: () => void;
-  pickupExtinguisher: () => void;
+  pickupExtinguisher: (extinguisherType?: InteractiveObjectType) => void;
   useExtinguisher: () => void;
   addScore: (points: number) => void;
   getMovementSpeed: () => number;
+  // Gas Mask functionality - temporarily disabled
+  // pickupGasMask: () => void;
+  // hasGasMask: boolean;
 }
 
 export const usePlayer = create<PlayerStateStore>()(
@@ -28,6 +31,7 @@ export const usePlayer = create<PlayerStateStore>()(
     rotation: { x: 0, y: 0, z: 0 },
     health: PLAYER_CONSTANTS.MAX_HEALTH,
     hasExtinguisher: false,
+    extinguisherType: null,
     isCrouching: false,
     isRunning: false,
     oxygen: PLAYER_CONSTANTS.MAX_OXYGEN,
@@ -134,15 +138,19 @@ export const usePlayer = create<PlayerStateStore>()(
         rotation: { x: 0, y: 0, z: 0 },
         health: PLAYER_CONSTANTS.MAX_HEALTH,
         hasExtinguisher: false,
+        extinguisherType: null,
         isCrouching: false,
         isRunning: false,
         oxygen: PLAYER_CONSTANTS.MAX_OXYGEN
       });
     },
     
-    pickupExtinguisher: () => {
-      set({ hasExtinguisher: true });
-      console.log("Fire extinguisher picked up");
+    pickupExtinguisher: (extinguisherType?: InteractiveObjectType) => {
+      set({ 
+        hasExtinguisher: true,
+        extinguisherType: extinguisherType || InteractiveObjectType.FireExtinguisher
+      });
+      console.log(`Fire extinguisher picked up: ${extinguisherType || 'Standard'}`);
     },
     
     useExtinguisher: () => {
@@ -151,9 +159,15 @@ export const usePlayer = create<PlayerStateStore>()(
       console.log("Using fire extinguisher");
     },
     
-    addScore: (points: number) => {
+        addScore: (points: number) => {
       set(state => ({ score: state.score + points }));
     },
+    
+    // pickupGasMask: () => {
+    //   console.log("BFP Breathing Apparatus pickup triggered - testing...");
+    //   // Temporarily comment out state change to debug
+    //   // set({ hasGasMask: true });
+    // },
     
     getMovementSpeed: () => {
       const { isCrouching, isRunning } = get();

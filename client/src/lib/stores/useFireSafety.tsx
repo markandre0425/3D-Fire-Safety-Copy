@@ -48,7 +48,7 @@ export const useFireSafety = create<FireSafetyState>()(
       set({
         currentLevel: level,
         levelData,
-        levelTime: levelData.timeLimit,
+        levelTime: levelData.timeLimit > 0 ? levelData.timeLimit : 300, // Ensure a positive time limit with fallback
         hazards: [...levelData.hazards],
         interactiveObjects: [...levelData.objects],
         isPaused: false,
@@ -56,7 +56,7 @@ export const useFireSafety = create<FireSafetyState>()(
         activeTip: null
       });
       
-      console.log(`Starting level: ${level}`);
+      console.log(`Starting level: ${level} with time limit: ${levelData.timeLimit}`);
     },
     
     pauseGame: () => {
@@ -169,9 +169,14 @@ export const useFireSafety = create<FireSafetyState>()(
         
         set({ interactiveObjects: updatedObjects });
         
-        // If it's a fire extinguisher, give it to the player
-        if (object.type === "FireExtinguisher") {
-          usePlayer.getState().pickupExtinguisher();
+        // If it's a fire extinguisher, give it to the player with type
+        if (object.type === "FireExtinguisher" || 
+            object.type === "WaterExtinguisher" ||
+            object.type === "FoamExtinguisher" ||
+            object.type === "CO2Extinguisher" ||
+            object.type === "PowderExtinguisher" ||
+            object.type === "WetChemicalExtinguisher") {
+          usePlayer.getState().pickupExtinguisher(object.type);
         }
         
         useAudio.getState().playSuccess();
@@ -196,3 +201,4 @@ export const useFireSafety = create<FireSafetyState>()(
     }
   }))
 );
+

@@ -49,6 +49,56 @@ export default function GameUI() {
       {/* Health and Oxygen Bars */}
       <HealthBar />
       
+
+      
+      {/* Simple Gas Mask Status - Temporarily disabled for debugging */}
+      {/* {hasGasMask && (
+        <div className="absolute top-4 right-4 bg-blue-900 bg-opacity-80 p-2 rounded-md text-white">
+          <h3 className="text-sm font-bold">🛡️ BFP Breathing Apparatus</h3>
+          <p className="text-xs text-green-300">Smoke Protection: Active</p>
+        </div>
+      )} */}
+      
+      {/* BFP Gas Mask Status */}
+      {/* {hasGasMask && (
+        <div className="absolute top-4 right-4 bg-blue-900 bg-opacity-80 p-3 rounded-md text-white">
+          <h3 className="text-sm font-bold mb-1">🛡️ BFP Breathing Apparatus</h3>
+          <div className="flex items-center space-x-2">
+            <span className="text-xs">Oxygen Filter:</span>
+            <div className="w-24 h-2 bg-gray-600 rounded-full overflow-hidden">
+              <div 
+                className={`h-full transition-all duration-300 ${
+                  gasMaskOxygenLevel > 50 ? 'bg-green-500' : 
+                  gasMaskOxygenLevel > 25 ? 'bg-yellow-500' : 'bg-red-500'
+                }`}
+                style={{ width: `${gasMaskOxygenLevel}%` }}
+              />
+            </div>
+            <span className="text-xs">{Math.round(gasMaskOxygenLevel)}%</span>
+          </div>
+          {gasMaskOxygenLevel < 25 && (
+            <p className="text-xs text-red-300 mt-1">⚠️ Filter Running Low!</p>
+          )}
+        </div>
+      )} */}
+      
+      {/* Oxygen Level Display */}
+      {/* <div className="absolute top-20 left-4 bg-black bg-opacity-50 p-2 rounded-md text-white">
+        <div className="flex items-center space-x-2">
+          <span className="text-sm">💨 Oxygen:</span>
+          <div className="w-20 h-2 bg-gray-600 rounded-full overflow-hidden">
+            <div 
+              className={`h-full transition-all duration-300 ${
+                oxygen > 70 ? 'bg-blue-500' : 
+                oxygen > 40 ? 'bg-yellow-500' : 'bg-red-500'
+              }`}
+              style={{ width: `${oxygen}%` }}
+            />
+          </div>
+          <span className="text-xs">{Math.round(oxygen)}%</span>
+        </div>
+      </div> */}
+      
       {/* Score and Time */}
       <ScoreDisplay />
       
@@ -56,14 +106,15 @@ export default function GameUI() {
       <div className="absolute bottom-4 right-4 bg-black bg-opacity-50 p-3 rounded-md text-white">
         <h3 className="text-lg font-bold mb-2">Controls</h3>
         <ul className="text-sm space-y-1">
-          <li>WASD / Arrows: Move</li>
-          <li>Shift: Run</li>
-          <li>C: Crouch</li>
-          <li>E: Interact</li>
-          {hasExtinguisher && <li>F: Use Extinguisher</li>}
+          <li>WASD / Arrows: Move (Walk Animation)</li>
+          <li>Shift: Run (Running Animation)</li>
+          <li>C: Crouch (Crouch Animation)</li>
+          <li>E: Interact / Collect Items</li>
+          {hasExtinguisher && <li>F: Use Extinguisher (Action Animation)</li>}
           <li>Esc: Pause</li>
           <li>M: Toggle Sound</li>
         </ul>
+
       </div>
       
       {/* Level Info */}

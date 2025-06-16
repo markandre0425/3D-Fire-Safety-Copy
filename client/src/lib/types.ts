@@ -21,6 +21,7 @@ export interface PlayerState {
   rotation: Vector3;
   health: number;
   hasExtinguisher: boolean;
+  extinguisherType: InteractiveObjectType | null; // Track which type of extinguisher the player has
   isCrouching: boolean;
   isRunning: boolean;
   oxygen: number;
@@ -43,7 +44,15 @@ export enum HazardType {
   Candle = "Candle",
   Fireplace = "Fireplace",
   SpacerHeater = "SpacerHeater",
-  CloggedDryer = "CloggedDryer"
+  CloggedDryer = "CloggedDryer",
+  ClassAFire = "ClassAFire",        // Ordinary combustibles (wood, paper, cloth)
+  ClassBFire = "ClassBFire",        // Flammable liquids (gasoline, oil, paint)
+  ClassCFire = "ClassCFire",        // Electrical equipment
+  ClassDFire = "ClassDFire",        // Combustible metals
+  ClassKFire = "ClassKFire",        // Cooking oils and fats
+  GasLeak = "GasLeak",              // Natural gas or propane leak
+  ChemicalSpill = "ChemicalSpill",   // Chemical hazards
+  SmokeScreen = "SmokeScreen"        // Heavy smoke areas
 }
 
 export interface InteractiveObject {
@@ -59,13 +68,26 @@ export enum InteractiveObjectType {
   SmokeDetector = "SmokeDetector",
   EmergencyExit = "EmergencyExit",
   FireBlanket = "FireBlanket",
-  WaterSource = "WaterSource"
+  WaterSource = "WaterSource",
+  WaterExtinguisher = "WaterExtinguisher",     // For Class A fires
+  FoamExtinguisher = "FoamExtinguisher",       // For Class B fires
+  CO2Extinguisher = "CO2Extinguisher",         // For Class C fires
+  PowderExtinguisher = "PowderExtinguisher",   // For Class D fires
+  WetChemicalExtinguisher = "WetChemicalExtinguisher", // For Class K fires
+  EmergencyAlarm = "EmergencyAlarm",
+  FirstAidKit = "FirstAidKit",
+  EscapeRope = "EscapeRope"
 }
 
 export enum Level {
   Kitchen = "Kitchen",
   LivingRoom = "LivingRoom",
-  Bedroom = "Bedroom"
+  Bedroom = "Bedroom",
+  BasicTraining = "BasicTraining",      // Level 1: PASS technique
+  FireClassification = "FireClassification", // Level 2: Different fire types
+  EmergencyResponse = "EmergencyResponse",   // Level 3: Complex scenarios
+  AdvancedRescue = "AdvancedRescue",        // Level 4: Multiple hazards + evacuation
+  BFPCertification = "BFPCertification"     // Level 5: Master level certification
 }
 
 export interface LevelData {
@@ -77,6 +99,8 @@ export interface LevelData {
   environmentObjects: EnvironmentObject[];
   requiredScore: number;
   timeLimit: number;
+  difficulty: DifficultyLevel;  // Adding difficulty tracking
+  learningObjectives: string[]; // BFP learning objectives
 }
 
 export interface EnvironmentObject {
@@ -99,4 +123,12 @@ export enum SafetyTipCategory {
   Detection = "Detection",
   Response = "Response",
   Evacuation = "Evacuation"
+}
+
+export enum DifficultyLevel {
+  Beginner = "Beginner",
+  Intermediate = "Intermediate", 
+  Advanced = "Advanced",
+  Expert = "Expert",
+  Master = "Master"
 }
