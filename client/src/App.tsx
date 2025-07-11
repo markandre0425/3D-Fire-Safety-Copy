@@ -1,7 +1,6 @@
-import { Canvas } from "@react-three/fiber";
 import { Suspense, useEffect, useState } from "react";
+import { Canvas } from "@react-three/fiber";
 import { KeyboardControls } from "@react-three/drei";
-import { useAudio } from "./lib/stores/useAudio";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "./lib/queryClient";
 import "@fontsource/inter";
@@ -11,9 +10,7 @@ import MainMenu from "./components/screens/MainMenu";
 import EndScreen from "./components/screens/EndScreen";
 import TutorialScreen from "./components/screens/TutorialScreen";
 import { useGame } from "./lib/stores/useGame";
-import SoundManager from "./components/game/SoundManager";
-import GameUI from "./components/game/GameUI";
-import { Howl } from "howler";
+import { useIsMobile, useMobileOptimization } from "./components/MobileControls";
 
 // Define control keys for the game
 const keyboardMap = [
@@ -28,96 +25,53 @@ const keyboardMap = [
   { name: Controls.pause, keys: ["Escape"] },
 ];
 
-// Main App component
+// Main App component - Simplified for debugging
 function App() {
   const { phase: gamePhase } = useGame();
-  const [showCanvas, setShowCanvas] = useState(false);
-  const [showMenu, setShowMenu] = useState(true);
-  const [showEndScreen, setShowEndScreen] = useState(false);
-  const [showTutorial, setShowTutorial] = useState(false);
-  const [loadingComplete, setLoadingComplete] = useState(false);
-  const { setBackgroundMusic, setHitSound, setSuccessSound } = useAudio();
+  const isMobile = useIsMobile();
+  const mobileConfig = useMobileOptimization();
+  const [loadingComplete, setLoadingComplete] = useState(true); // Set to true by default for testing
 
-  // Load audio assets
+  // Debug logging
   useEffect(() => {
-    // Background music
-    const bgMusic = new Howl({
-      src: ['/sounds/background.mp3'],
-      loop: true,
-      volume: 0.4,
-    });
-    
-    // Sound effects
-    const hit = new Howl({
-      src: ['/sounds/hit.mp3'],
-      volume: 0.5,
-    });
-    
-    const success = new Howl({
-      src: ['/sounds/success.mp3'],
-      volume: 0.5,
-    });
-    
-    setBackgroundMusic(bgMusic);
-    setHitSound(hit);
-    setSuccessSound(success);
-    
-    setLoadingComplete(true);
-    
-    return () => {
-      // Clean up audio resources when component unmounts
-      bgMusic.stop();
-      hit.stop();
-      success.stop();
-    };
-  }, [setBackgroundMusic, setHitSound, setSuccessSound]);
-
-  // Update UI based on game phase
-  useEffect(() => {
-    if (loadingComplete) {
-      switch (gamePhase) {
-        case "ready":
-          setShowMenu(true);
-          setShowCanvas(false);
-          setShowEndScreen(false);
-          setShowTutorial(false);
-          break;
-        case "playing":
-          setShowMenu(false);
-          setShowCanvas(true);
-          setShowEndScreen(false);
-          break;
-        case "ended":
-          setShowEndScreen(true);
-          break;
-        default:
-          break;
-      }
-    }
-  }, [gamePhase, loadingComplete]);
+    console.log("🚀 App mounted, Game Phase:", gamePhase);
+    console.log("📱 Mobile device:", isMobile);
+    console.log("⚙️ Mobile config:", mobileConfig);
+  }, [gamePhase, isMobile, mobileConfig]);
 
   const startTutorial = () => {
-    setShowMenu(false);
-    setShowTutorial(true);
+    console.log("📚 Starting tutorial");
+    // For now, just start the game directly
+    useGame.getState().start();
   };
 
   const startGame = () => {
+    console.log("🎮 Starting game");
     useGame.getState().start();
-    setShowTutorial(false);
   };
 
+  // Simple render logic without complex state management
   return (
     <QueryClientProvider client={queryClient}>
-      <div className="w-screen h-screen relative overflow-hidden">
+      <div className="w-screen h-screen relative overflow-hidden bg-blue-500">
+        {/* Debug overlay */}
+        <div className="absolute top-4 left-4 bg-black/50 text-white p-2 rounded z-50">
+          <div>Phase: {gamePhase}</div>
+          <div>Mobile: {isMobile ? 'Yes' : 'No'}</div>
+          <div>Loading: {loadingComplete ? 'Complete' : 'Loading'}</div>
+        </div>
+
         <KeyboardControls map={keyboardMap}>
-          {showMenu && <MainMenu onStartTutorial={startTutorial} onStartGame={startGame} />}
+          {/* Show main menu when ready */}
+          {gamePhase === "ready" && (
+            <MainMenu onStartTutorial={startTutorial} onStartGame={startGame} />
+          )}
           
-          {showTutorial && <TutorialScreen onComplete={startGame} />}
-          
-          {showCanvas && (
+          {/* Show game when playing */}
+          {gamePhase === "playing" && (
             <>
               <Canvas
-                shadows
+                shadows={mobileConfig.shadows}
                 camera={{
                   position: [0, 5, 10],
                   fov: 50,
@@ -125,25 +79,22 @@ function App() {
                   far: 1000
                 }}
                 gl={{
-                  antialias: true,
-                  powerPreference: "default"
+                  antialias: mobileConfig.antialias,
+                  powerPreference: mobileConfig.powerPreference
                 }}
+                dpr={mobileConfig.pixelRatio}
+                style={{ background: '#87CEEB' }}
               >
                 <color attach="background" args={["#87CEEB"]} />
                 <Suspense fallback={null}>
                   <GameScreen />
                 </Suspense>
               </Canvas>
-              {/* Game UI overlaid outside the Canvas */}
-              <div className="absolute inset-0 pointer-events-none">
-                <GameUI />
-              </div>
             </>
           )}
           
-          {showEndScreen && <EndScreen />}
-          
-          <SoundManager />
+          {/* Show end screen when ended */}
+          {gamePhase === "ended" && <EndScreen />}
         </KeyboardControls>
       </div>
     </QueryClientProvider>

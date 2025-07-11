@@ -1,429 +1,566 @@
 import { Level, LevelData, SafetyTip, SafetyTipCategory, HazardType, InteractiveObjectType, DifficultyLevel } from "./types";
+import { generateDynamicExtinguishers, calculateLevelBounds } from "./levelGenerator";
 
-// Level data for the game
-export const LEVELS: Record<Level, LevelData> = {
-  [Level.Kitchen]: {
+// Create dynamic Kitchen level with appropriate extinguishers
+function createKitchenLevel(): LevelData {
+  const hazards = [
+    {
+      id: "stove1",
+      type: HazardType.StoveTop,
+      position: { x: 2, y: 0.8, z: -2 },
+      isActive: true,
+      severity: 2,
+      isSmoking: true,
+      isExtinguished: false
+    },
+    {
+      id: "outlet1",
+      type: HazardType.ElectricalOutlet,
+      position: { x: -2, y: 0.4, z: -3 },
+      isActive: true,
+      severity: 1,
+      isSmoking: false,
+      isExtinguished: false
+    },
+    // Stoves on red furniture pieces - spread out positions
+    {
+      id: "stove-furniture-1",
+      type: HazardType.StoveTop,
+      position: { x: -3.0, y: 1.0, z: -3.0 }, // Far left back corner
+      isActive: true,
+      severity: 3,
+      isSmoking: true,
+      isExtinguished: false
+    },
+    {
+      id: "stove-furniture-2", 
+      type: HazardType.StoveTop,
+      position: { x: 2.5, y: 1.0, z: 3.5 }, // Far right front area
+      isActive: true,
+      severity: 2,
+      isSmoking: true,
+      isExtinguished: false
+    },
+    {
+      id: "toaster-furniture-1",
+      type: HazardType.SpacerHeater, // This renders as a toaster
+      position: { x: -4.0, y: 1.0, z: 2.0 }, // Left side, well spaced
+      isActive: true,
+      severity: 2,
+      isSmoking: false,
+      isExtinguished: false
+    },
+    // Additional kitchen appliances spread throughout the kitchen
+    {
+      id: "microwave-1",
+      type: HazardType.Microwave,
+      position: { x: 1.0, y: 1.5, z: -4.0 }, // Counter height on back wall
+      isActive: true,
+      severity: 3,
+      isSmoking: true,
+      isExtinguished: false
+    },
+    {
+      id: "coffee-maker-1",
+      type: HazardType.StoveTop, // Small appliance fire
+      position: { x: -1.5, y: 1.0, z: -4.2 }, // Counter on left wall
+      isActive: true,
+      severity: 1,
+      isSmoking: false,
+      isExtinguished: false
+    },
+    {
+      id: "electrical-outlet-2",
+      type: HazardType.ElectricalOutlet,
+      position: { x: 4.5, y: 0.4, z: 1.0 }, // Right wall outlet
+      isActive: true,
+      severity: 2,
+      isSmoking: false,
+      isExtinguished: false
+    }
+  ];
+
+  const environmentObjects = [
+    {
+      id: "floor",
+      type: "floor",
+      position: { x: 0, y: 0, z: 0 },
+      rotation: { x: 0, y: 0, z: 0 },
+      scale: { x: 10, y: 0.1, z: 10 }
+    },
+    {
+      id: "wall1",
+      type: "wall",
+      position: { x: 0, y: 1.5, z: -5 },
+      rotation: { x: 0, y: 0, z: 0 },
+      scale: { x: 10, y: 3, z: 0.1 }
+    },
+    {
+      id: "wall2",
+      type: "wall",
+      position: { x: 0, y: 1.5, z: 5 },
+      rotation: { x: 0, y: 0, z: 0 },
+      scale: { x: 10, y: 3, z: 0.1 }
+    },
+    {
+      id: "wall3",
+      type: "wall",
+      position: { x: -5, y: 1.5, z: 0 },
+      rotation: { x: 0, y: Math.PI / 2, z: 0 },
+      scale: { x: 10, y: 3, z: 0.1 }
+    },
+    {
+      id: "wall4",
+      type: "wall",
+      position: { x: 5, y: 1.5, z: 0 },
+      rotation: { x: 0, y: Math.PI / 2, z: 0 },
+      scale: { x: 10, y: 3, z: 0.1 }
+    },
+    {
+      id: "counter1",
+      type: "counter",
+      position: { x: 2, y: 0.5, z: -4 },
+      rotation: { x: 0, y: 0, z: 0 },
+      scale: { x: 3, y: 1, z: 1 }
+    },
+    {
+      id: "counter2",
+      type: "counter",
+      position: { x: -2, y: 0.5, z: -4 },
+      rotation: { x: 0, y: 0, z: 0 },
+      scale: { x: 3, y: 1, z: 1 }
+    },
+    {
+      id: "table",
+      type: "table",
+      position: { x: 0, y: 0.5, z: 0 },
+      rotation: { x: 0, y: 0, z: 0 },
+      scale: { x: 2, y: 1, z: 3 }
+    }
+  ];
+
+  // Calculate level bounds for extinguisher spawning
+  const levelBounds = calculateLevelBounds(environmentObjects);
+  
+  // Generate dynamic extinguishers based on fire hazards
+  const dynamicExtinguishers = generateDynamicExtinguishers(hazards, levelBounds, {
+    extinguishersPerFireGroup: 2,
+    minExtinguishersPerType: 1,
+    maxExtinguishersPerType: 3,
+    spawnRadius: 3.0,
+    randomSpawnChance: 0.3
+  });
+
+  // Add static objects
+  const staticObjects = [
+    {
+      id: "detector1",
+      type: InteractiveObjectType.SmokeDetector,
+      position: { x: 0, y: 2.5, z: 0 },
+      isActive: false,
+      isCollected: false
+    },
+    {
+      id: "exit1",
+      type: InteractiveObjectType.EmergencyExit,
+      position: { x: 0, y: 1, z: 4.5 },
+      isActive: true,
+      isCollected: false
+    }
+  ];
+
+  return {
     id: Level.Kitchen,
     name: "Kitchen Safety",
-    description: "Learn how to prevent and respond to kitchen fires",
-    hazards: [
-      {
-        id: "stove1",
-        type: HazardType.StoveTop,
-        position: { x: 2, y: 0.8, z: -2 },
-        isActive: true,
-        severity: 2,
-        isSmoking: true,
-        isExtinguished: false
-      },
-      {
-        id: "outlet1",
-        type: HazardType.ElectricalOutlet,
-        position: { x: -2, y: 0.4, z: -3 },
-        isActive: true,
-        severity: 1,
-        isSmoking: false,
-        isExtinguished: false
-      }
-    ],
-    objects: [
-      {
-        id: "extinguisher1",
-        type: InteractiveObjectType.FireExtinguisher,
-        position: { x: -3, y: 0, z: 3 },
-        isActive: true,
-        isCollected: false
-      },
-      {
-        id: "detector1",
-        type: InteractiveObjectType.SmokeDetector,
-        position: { x: 0, y: 2.5, z: 0 },
-        isActive: false,
-        isCollected: false
-      },
-      {
-        id: "exit1",
-        type: InteractiveObjectType.EmergencyExit,
-        position: { x: 0, y: 1, z: 4.5 },
-        isActive: true,
-        isCollected: false
-      }
-    ],
-    environmentObjects: [
-      {
-        id: "floor",
-        type: "floor",
-        position: { x: 0, y: 0, z: 0 },
-        rotation: { x: 0, y: 0, z: 0 },
-        scale: { x: 10, y: 0.1, z: 10 }
-      },
-      {
-        id: "wall1",
-        type: "wall",
-        position: { x: 0, y: 1.5, z: -5 },
-        rotation: { x: 0, y: 0, z: 0 },
-        scale: { x: 10, y: 3, z: 0.1 }
-      },
-      {
-        id: "wall2",
-        type: "wall",
-        position: { x: 0, y: 1.5, z: 5 },
-        rotation: { x: 0, y: 0, z: 0 },
-        scale: { x: 10, y: 3, z: 0.1 }
-      },
-      {
-        id: "wall3",
-        type: "wall",
-        position: { x: -5, y: 1.5, z: 0 },
-        rotation: { x: 0, y: Math.PI / 2, z: 0 },
-        scale: { x: 10, y: 3, z: 0.1 }
-      },
-      {
-        id: "wall4",
-        type: "wall",
-        position: { x: 5, y: 1.5, z: 0 },
-        rotation: { x: 0, y: Math.PI / 2, z: 0 },
-        scale: { x: 10, y: 3, z: 0.1 }
-      },
-      {
-        id: "counter1",
-        type: "counter",
-        position: { x: 2, y: 0.5, z: -4 },
-        rotation: { x: 0, y: 0, z: 0 },
-        scale: { x: 3, y: 1, z: 1 }
-      },
-      {
-        id: "counter2",
-        type: "counter",
-        position: { x: -2, y: 0.5, z: -4 },
-        rotation: { x: 0, y: 0, z: 0 },
-        scale: { x: 3, y: 1, z: 1 }
-      },
-      {
-        id: "table",
-        type: "table",
-        position: { x: 0, y: 0.5, z: 0 },
-        rotation: { x: 0, y: 0, z: 0 },
-        scale: { x: 2, y: 1, z: 3 }
-      }
-    ],
+    description: "Practice fire safety in the kitchen with dynamic color-coded extinguishers",
+    hazards,
+    objects: [...dynamicExtinguishers, ...staticObjects],
+    environmentObjects,
     requiredScore: 300,
     timeLimit: 180,
     difficulty: DifficultyLevel.Beginner,
     learningObjectives: [
       "Learn to identify common kitchen fire hazards",
-      "Practice using fire extinguisher with PASS technique",
-      "Understand importance of smoke detector activation"
+      "Practice using correct fire extinguisher types for different fire classes",
+      "Understand color-coded extinguisher system (RED, BLACK, YELLOW)",
+      "Master PASS technique with appropriate extinguisher selection"
     ]
-  },
-  [Level.LivingRoom]: {
+  };
+}
+
+// Create dynamic Living Room level with appropriate extinguishers
+function createLivingRoomLevel(): LevelData {
+  const hazards = [
+    {
+      id: "fireplace1",
+      type: HazardType.Fireplace,
+      position: { x: 0, y: 0.5, z: -4 },
+      isActive: true,
+      severity: 2,
+      isSmoking: true,
+      isExtinguished: false
+    },
+    {
+      id: "candle1",
+      type: HazardType.Candle,
+      position: { x: 2, y: 0.8, z: 0 },
+      isActive: true,
+      severity: 1,
+      isSmoking: false,
+      isExtinguished: false
+    },
+    {
+      id: "heater1",
+      type: HazardType.SpacerHeater,
+      position: { x: -3, y: 0.5, z: 2 },
+      isActive: true,
+      severity: 2,
+      isSmoking: false,
+      isExtinguished: false
+    },
+    {
+      id: "electrical-outlet-3",
+      type: HazardType.ElectricalOutlet,
+      position: { x: 4, y: 0.4, z: -2 },
+      isActive: true,
+      severity: 1,
+      isSmoking: false,
+      isExtinguished: false
+    }
+  ];
+
+  const environmentObjects = [
+    {
+      id: "floor",
+      type: "floor",
+      position: { x: 0, y: 0, z: 0 },
+      rotation: { x: 0, y: 0, z: 0 },
+      scale: { x: 10, y: 0.1, z: 10 }
+    },
+    {
+      id: "wall1",
+      type: "wall",
+      position: { x: 0, y: 1.5, z: -5 },
+      rotation: { x: 0, y: 0, z: 0 },
+      scale: { x: 10, y: 3, z: 0.1 }
+    },
+    {
+      id: "wall2",
+      type: "wall",
+      position: { x: 0, y: 1.5, z: 5 },
+      rotation: { x: 0, y: 0, z: 0 },
+      scale: { x: 10, y: 3, z: 0.1 }
+    },
+    {
+      id: "wall3",
+      type: "wall",
+      position: { x: -5, y: 1.5, z: 0 },
+      rotation: { x: 0, y: Math.PI / 2, z: 0 },
+      scale: { x: 10, y: 3, z: 0.1 }
+    },
+    {
+      id: "wall4",
+      type: "wall",
+      position: { x: 5, y: 1.5, z: 0 },
+      rotation: { x: 0, y: Math.PI / 2, z: 0 },
+      scale: { x: 10, y: 3, z: 0.1 }
+    },
+    {
+      id: "sofa",
+      type: "sofa",
+      position: { x: -2, y: 0.5, z: 0 },
+      rotation: { x: 0, y: Math.PI / 2, z: 0 },
+      scale: { x: 3, y: 1, z: 1 }
+    },
+    {
+      id: "coffeeTable",
+      type: "table",
+      position: { x: 0, y: 0.3, z: 0 },
+      rotation: { x: 0, y: 0, z: 0 },
+      scale: { x: 1.5, y: 0.6, z: 1 }
+    }
+  ];
+
+  // Calculate level bounds for extinguisher spawning
+  const levelBounds = calculateLevelBounds(environmentObjects);
+  
+  // Generate dynamic extinguishers based on fire hazards
+  const dynamicExtinguishers = generateDynamicExtinguishers(hazards, levelBounds, {
+    extinguishersPerFireGroup: 2,
+    minExtinguishersPerType: 1,
+    maxExtinguishersPerType: 2,
+    spawnRadius: 3.5,
+    randomSpawnChance: 0.25
+  });
+
+  // Add static objects
+  const staticObjects = [
+    {
+      id: "detector2",
+      type: InteractiveObjectType.SmokeDetector,
+      position: { x: 0, y: 2.5, z: 0 },
+      isActive: false,
+      isCollected: false
+    },
+    {
+      id: "exit2",
+      type: InteractiveObjectType.EmergencyExit,
+      position: { x: 0, y: 1, z: 4.5 },
+      isActive: true,
+      isCollected: false
+    }
+  ];
+
+  return {
     id: Level.LivingRoom,
     name: "Living Room Safety",
-    description: "Identify and manage common fire hazards in the living room",
-    hazards: [
-      {
-        id: "fireplace1",
-        type: HazardType.Fireplace,
-        position: { x: 0, y: 0.5, z: -4 },
-        isActive: true,
-        severity: 2,
-        isSmoking: true,
-        isExtinguished: false
-      },
-      {
-        id: "candle1",
-        type: HazardType.Candle,
-        position: { x: 2, y: 0.8, z: 0 },
-        isActive: true,
-        severity: 1,
-        isSmoking: false,
-        isExtinguished: false
-      },
-      {
-        id: "heater1",
-        type: HazardType.SpacerHeater,
-        position: { x: -3, y: 0.5, z: 2 },
-        isActive: true,
-        severity: 2,
-        isSmoking: false,
-        isExtinguished: false
-      }
-    ],
-    objects: [
-      {
-        id: "extinguisher2",
-        type: InteractiveObjectType.FireExtinguisher,
-        position: { x: 4, y: 0, z: 4 },
-        isActive: true,
-        isCollected: false
-      },
-      {
-        id: "detector2",
-        type: InteractiveObjectType.SmokeDetector,
-        position: { x: 0, y: 2.5, z: 0 },
-        isActive: false,
-        isCollected: false
-      },
-      {
-        id: "exit2",
-        type: InteractiveObjectType.EmergencyExit,
-        position: { x: 0, y: 1, z: 4.5 },
-        isActive: true,
-        isCollected: false
-      }
-    ],
-    environmentObjects: [
-      {
-        id: "floor",
-        type: "floor",
-        position: { x: 0, y: 0, z: 0 },
-        rotation: { x: 0, y: 0, z: 0 },
-        scale: { x: 10, y: 0.1, z: 10 }
-      },
-      {
-        id: "wall1",
-        type: "wall",
-        position: { x: 0, y: 1.5, z: -5 },
-        rotation: { x: 0, y: 0, z: 0 },
-        scale: { x: 10, y: 3, z: 0.1 }
-      },
-      {
-        id: "wall2",
-        type: "wall",
-        position: { x: 0, y: 1.5, z: 5 },
-        rotation: { x: 0, y: 0, z: 0 },
-        scale: { x: 10, y: 3, z: 0.1 }
-      },
-      {
-        id: "wall3",
-        type: "wall",
-        position: { x: -5, y: 1.5, z: 0 },
-        rotation: { x: 0, y: Math.PI / 2, z: 0 },
-        scale: { x: 10, y: 3, z: 0.1 }
-      },
-      {
-        id: "wall4",
-        type: "wall",
-        position: { x: 5, y: 1.5, z: 0 },
-        rotation: { x: 0, y: Math.PI / 2, z: 0 },
-        scale: { x: 10, y: 3, z: 0.1 }
-      },
-      {
-        id: "sofa",
-        type: "sofa",
-        position: { x: -2, y: 0.5, z: 0 },
-        rotation: { x: 0, y: Math.PI / 2, z: 0 },
-        scale: { x: 3, y: 1, z: 1 }
-      },
-      {
-        id: "coffeeTable",
-        type: "table",
-        position: { x: 0, y: 0.3, z: 0 },
-        rotation: { x: 0, y: 0, z: 0 },
-        scale: { x: 1.5, y: 0.6, z: 1 }
-      }
-    ],
+    description: "Identify and manage common fire hazards in the living room with smart extinguisher placement",
+    hazards,
+    objects: [...dynamicExtinguishers, ...staticObjects],
+    environmentObjects,
     requiredScore: 400,
-    timeLimit: 210,
+    timeLimit: 150,
     difficulty: DifficultyLevel.Intermediate,
     learningObjectives: [
       "Identify multiple fire sources in one room",
       "Practice proper spacing from space heaters",
-      "Learn candle safety and fireplace management"
+      "Learn candle safety and fireplace management",
+      "Apply different extinguisher types strategically"
     ]
-  },
-  [Level.Bedroom]: {
+  };
+}
+
+// Create dynamic Bedroom level with appropriate extinguishers
+function createBedroomLevel(): LevelData {
+  const hazards = [
+    {
+      id: "outlet2",
+      type: HazardType.ElectricalOutlet,
+      position: { x: -4, y: 0.4, z: -2 },
+      isActive: true,
+      severity: 1,
+      isSmoking: false,
+      isExtinguished: false
+    },
+    {
+      id: "heater2",
+      type: HazardType.SpacerHeater,
+      position: { x: 3, y: 0.5, z: -3 },
+      isActive: true,
+      severity: 2,
+      isSmoking: true,
+      isExtinguished: false
+    },
+    {
+      id: "dryer1",
+      type: HazardType.CloggedDryer,
+      position: { x: 4, y: 0.5, z: 3 },
+      isActive: true,
+      severity: 3,
+      isSmoking: true,
+      isExtinguished: false
+    },
+    {
+      id: "electrical-outlet-4",
+      type: HazardType.ElectricalOutlet,
+      position: { x: -2, y: 0.4, z: 4 },
+      isActive: true,
+      severity: 1,
+      isSmoking: false,
+      isExtinguished: false
+    }
+  ];
+
+  const environmentObjects = [
+    {
+      id: "floor",
+      type: "floor",
+      position: { x: 0, y: 0, z: 0 },
+      rotation: { x: 0, y: 0, z: 0 },
+      scale: { x: 10, y: 0.1, z: 10 }
+    },
+    {
+      id: "wall1",
+      type: "wall",
+      position: { x: 0, y: 1.5, z: -5 },
+      rotation: { x: 0, y: 0, z: 0 },
+      scale: { x: 10, y: 3, z: 0.1 }
+    },
+    {
+      id: "wall2",
+      type: "wall",
+      position: { x: 0, y: 1.5, z: 5 },
+      rotation: { x: 0, y: 0, z: 0 },
+      scale: { x: 10, y: 3, z: 0.1 }
+    },
+    {
+      id: "wall3",
+      type: "wall",
+      position: { x: -5, y: 1.5, z: 0 },
+      rotation: { x: 0, y: Math.PI / 2, z: 0 },
+      scale: { x: 10, y: 3, z: 0.1 }
+    },
+    {
+      id: "wall4",
+      type: "wall",
+      position: { x: 5, y: 1.5, z: 0 },
+      rotation: { x: 0, y: Math.PI / 2, z: 0 },
+      scale: { x: 10, y: 3, z: 0.1 }
+    },
+    {
+      id: "bed",
+      type: "bed",
+      position: { x: -2, y: 0.3, z: -2 },
+      rotation: { x: 0, y: 0, z: 0 },
+      scale: { x: 2, y: 0.6, z: 3 }
+    },
+    {
+      id: "dresser",
+      type: "dresser",
+      position: { x: 2, y: 0.5, z: -4 },
+      rotation: { x: 0, y: 0, z: 0 },
+      scale: { x: 2, y: 1, z: 1 }
+    }
+  ];
+
+  // Calculate level bounds for extinguisher spawning
+  const levelBounds = calculateLevelBounds(environmentObjects);
+  
+  // Generate dynamic extinguishers based on fire hazards
+  const dynamicExtinguishers = generateDynamicExtinguishers(hazards, levelBounds, {
+    extinguishersPerFireGroup: 2,
+    minExtinguishersPerType: 1,
+    maxExtinguishersPerType: 2,
+    spawnRadius: 3.0,
+    randomSpawnChance: 0.2
+  });
+
+  // Add static objects
+  const staticObjects = [
+    {
+      id: "detector3",
+      type: InteractiveObjectType.SmokeDetector,
+      position: { x: 0, y: 2.5, z: 0 },
+      isActive: false,
+      isCollected: false
+    },
+    {
+      id: "exit3",
+      type: InteractiveObjectType.EmergencyExit,
+      position: { x: 0, y: 1, z: 4.5 },
+      isActive: true,
+      isCollected: false
+    }
+  ];
+
+  return {
     id: Level.Bedroom,
     name: "Bedroom Safety",
-    description: "Practice fire safety measures in the bedroom",
-    hazards: [
-      {
-        id: "outlet2",
-        type: HazardType.ElectricalOutlet,
-        position: { x: -4, y: 0.4, z: -2 },
-        isActive: true,
-        severity: 1,
-        isSmoking: false,
-        isExtinguished: false
-      },
-      {
-        id: "heater2",
-        type: HazardType.SpacerHeater,
-        position: { x: 3, y: 0.5, z: -3 },
-        isActive: true,
-        severity: 2,
-        isSmoking: true,
-        isExtinguished: false
-      },
-      {
-        id: "dryer1",
-        type: HazardType.CloggedDryer,
-        position: { x: 4, y: 0.5, z: 3 },
-        isActive: true,
-        severity: 3,
-        isSmoking: true,
-        isExtinguished: false
-      }
-    ],
-    objects: [
-      {
-        id: "extinguisher3",
-        type: InteractiveObjectType.FireExtinguisher,
-        position: { x: -4, y: 0, z: 4 },
-        isActive: true,
-        isCollected: false
-      },
-      {
-        id: "detector3",
-        type: InteractiveObjectType.SmokeDetector,
-        position: { x: 0, y: 2.5, z: 0 },
-        isActive: false,
-        isCollected: false
-      },
-      {
-        id: "exit3",
-        type: InteractiveObjectType.EmergencyExit,
-        position: { x: 0, y: 1, z: 4.5 },
-        isActive: true,
-        isCollected: false
-      }
-    ],
-    environmentObjects: [
-      {
-        id: "floor",
-        type: "floor",
-        position: { x: 0, y: 0, z: 0 },
-        rotation: { x: 0, y: 0, z: 0 },
-        scale: { x: 10, y: 0.1, z: 10 }
-      },
-      {
-        id: "wall1",
-        type: "wall",
-        position: { x: 0, y: 1.5, z: -5 },
-        rotation: { x: 0, y: 0, z: 0 },
-        scale: { x: 10, y: 3, z: 0.1 }
-      },
-      {
-        id: "wall2",
-        type: "wall",
-        position: { x: 0, y: 1.5, z: 5 },
-        rotation: { x: 0, y: 0, z: 0 },
-        scale: { x: 10, y: 3, z: 0.1 }
-      },
-      {
-        id: "wall3",
-        type: "wall",
-        position: { x: -5, y: 1.5, z: 0 },
-        rotation: { x: 0, y: Math.PI / 2, z: 0 },
-        scale: { x: 10, y: 3, z: 0.1 }
-      },
-      {
-        id: "wall4",
-        type: "wall",
-        position: { x: 5, y: 1.5, z: 0 },
-        rotation: { x: 0, y: Math.PI / 2, z: 0 },
-        scale: { x: 10, y: 3, z: 0.1 }
-      },
-      {
-        id: "bed",
-        type: "bed",
-        position: { x: -2, y: 0.4, z: 0 },
-        rotation: { x: 0, y: 0, z: 0 },
-        scale: { x: 2, y: 0.8, z: 3 }
-      },
-      {
-        id: "dresser",
-        type: "dresser",
-        position: { x: -4, y: 0.8, z: -4 },
-        rotation: { x: 0, y: 0, z: 0 },
-        scale: { x: 1.5, y: 1.6, z: 0.8 }
-      }
-    ],
+    description: "Practice fire safety measures in the bedroom with advanced dryer fire scenarios",
+    hazards,
+    objects: [...dynamicExtinguishers, ...staticObjects],
+    environmentObjects,
     requiredScore: 500,
     timeLimit: 240,
     difficulty: DifficultyLevel.Advanced,
     learningObjectives: [
       "Handle high-severity hazards like clogged dryers",
       "Manage multiple fire sources simultaneously",
-      "Practice emergency response under time pressure"
+      "Practice emergency response under time pressure",
+      "Apply strategic extinguisher placement knowledge"
     ]
-  },
-  // New BFP-based training levels
-  [Level.BasicTraining]: {
+  };
+}
+
+// Create dynamic Basic Training level with appropriate extinguishers
+function createBasicTrainingLevel(): LevelData {
+  const hazards = [
+    {
+      id: "classA1",
+      type: HazardType.ClassAFire,
+      position: { x: 0, y: 0.5, z: -2 },
+      isActive: true,
+      severity: 1,
+      isSmoking: false,
+      isExtinguished: false
+    }
+  ];
+
+  const environmentObjects = [
+    {
+      id: "floor",
+      type: "floor",
+      position: { x: 0, y: 0, z: 0 },
+      rotation: { x: 0, y: 0, z: 0 },
+      scale: { x: 10, y: 0.1, z: 10 }
+    },
+    {
+      id: "wall1",
+      type: "wall",
+      position: { x: 0, y: 1.5, z: -5 },
+      rotation: { x: 0, y: 0, z: 0 },
+      scale: { x: 10, y: 3, z: 0.1 }
+    },
+    {
+      id: "wall2",
+      type: "wall",
+      position: { x: 0, y: 1.5, z: 5 },
+      rotation: { x: 0, y: 0, z: 0 },
+      scale: { x: 10, y: 3, z: 0.1 }
+    },
+    {
+      id: "wall3",
+      type: "wall",
+      position: { x: -5, y: 1.5, z: 0 },
+      rotation: { x: 0, y: Math.PI / 2, z: 0 },
+      scale: { x: 10, y: 3, z: 0.1 }
+    },
+    {
+      id: "wall4",
+      type: "wall",
+      position: { x: 5, y: 1.5, z: 0 },
+      rotation: { x: 0, y: Math.PI / 2, z: 0 },
+      scale: { x: 10, y: 3, z: 0.1 }
+    }
+  ];
+
+  // Calculate level bounds for extinguisher spawning
+  const levelBounds = calculateLevelBounds(environmentObjects);
+  
+  // Generate dynamic extinguishers based on fire hazards
+  const dynamicExtinguishers = generateDynamicExtinguishers(hazards, levelBounds, {
+    extinguishersPerFireGroup: 1,
+    minExtinguishersPerType: 1,
+    maxExtinguishersPerType: 1,
+    spawnRadius: 3.0,
+    randomSpawnChance: 0.0
+  });
+
+  // Add static objects
+  const staticObjects = [
+    {
+      id: "basicDetector",
+      type: InteractiveObjectType.SmokeDetector,
+      position: { x: 0, y: 2.5, z: 0 },
+      isActive: false,
+      isCollected: false
+    },
+    {
+      id: "basicExit",
+      type: InteractiveObjectType.EmergencyExit,
+      position: { x: 0, y: 1, z: 4.5 },
+      isActive: true,
+      isCollected: false
+    }
+  ];
+
+  return {
     id: Level.BasicTraining,
     name: "BFP Basic Training",
     description: "Learn the fundamentals with Captain Apoy! Master the PASS technique and basic fire safety principles.",
-    hazards: [
-      {
-        id: "classA1",
-        type: HazardType.ClassAFire,
-        position: { x: 0, y: 0.5, z: -2 },
-        isActive: true,
-        severity: 1,
-        isSmoking: false,
-        isExtinguished: false
-      }
-    ],
-    objects: [
-      {
-        id: "waterExt1",
-        type: InteractiveObjectType.WaterExtinguisher,
-        position: { x: -2, y: 0, z: 3 },
-        isActive: true,
-        isCollected: false
-      },
-      {
-        id: "basicDetector",
-        type: InteractiveObjectType.SmokeDetector,
-        position: { x: 0, y: 2.5, z: 0 },
-        isActive: false,
-        isCollected: false
-      },
-      {
-        id: "basicExit",
-        type: InteractiveObjectType.EmergencyExit,
-        position: { x: 0, y: 1, z: 4.5 },
-        isActive: true,
-        isCollected: false
-      }
-    ],
-    environmentObjects: [
-      {
-        id: "floor",
-        type: "floor",
-        position: { x: 0, y: 0, z: 0 },
-        rotation: { x: 0, y: 0, z: 0 },
-        scale: { x: 10, y: 0.1, z: 10 }
-      },
-      {
-        id: "wall1",
-        type: "wall",
-        position: { x: 0, y: 1.5, z: -5 },
-        rotation: { x: 0, y: 0, z: 0 },
-        scale: { x: 10, y: 3, z: 0.1 }
-      },
-      {
-        id: "wall2",
-        type: "wall",
-        position: { x: 0, y: 1.5, z: 5 },
-        rotation: { x: 0, y: 0, z: 0 },
-        scale: { x: 10, y: 3, z: 0.1 }
-      },
-      {
-        id: "wall3",
-        type: "wall",
-        position: { x: -5, y: 1.5, z: 0 },
-        rotation: { x: 0, y: Math.PI / 2, z: 0 },
-        scale: { x: 10, y: 3, z: 0.1 }
-      },
-      {
-        id: "wall4",
-        type: "wall",
-        position: { x: 5, y: 1.5, z: 0 },
-        rotation: { x: 0, y: Math.PI / 2, z: 0 },
-        scale: { x: 10, y: 3, z: 0.1 }
-      }
-    ],
+    hazards,
+    objects: [...dynamicExtinguishers, ...staticObjects],
+    environmentObjects,
     requiredScore: 150,
     timeLimit: 120,
     difficulty: DifficultyLevel.Beginner,
@@ -432,107 +569,109 @@ export const LEVELS: Record<Level, LevelData> = {
       "Identify Class A fires (ordinary combustibles)",
       "Use water extinguisher safely and effectively"
     ]
-  },
-  [Level.FireClassification]: {
+  };
+}
+
+// Create dynamic Fire Classification level with appropriate extinguishers
+function createFireClassificationLevel(): LevelData {
+  const hazards = [
+    {
+      id: "classA2",
+      type: HazardType.ClassAFire,
+      position: { x: -3, y: 0.5, z: -2 },
+      isActive: true,
+      severity: 2,
+      isSmoking: false,
+      isExtinguished: false
+    },
+    {
+      id: "classB1",
+      type: HazardType.ClassBFire,
+      position: { x: 0, y: 0.5, z: -2 },
+      isActive: true,
+      severity: 2,
+      isSmoking: true,
+      isExtinguished: false
+    },
+    {
+      id: "classC1",
+      type: HazardType.ClassCFire,
+      position: { x: 3, y: 0.5, z: -2 },
+      isActive: true,
+      severity: 2,
+      isSmoking: false,
+      isExtinguished: false
+    }
+  ];
+
+  const environmentObjects = [
+    {
+      id: "floor",
+      type: "floor",
+      position: { x: 0, y: 0, z: 0 },
+      rotation: { x: 0, y: 0, z: 0 },
+      scale: { x: 12, y: 0.1, z: 12 }
+    },
+    {
+      id: "wall1",
+      type: "wall",
+      position: { x: 0, y: 1.5, z: -6 },
+      rotation: { x: 0, y: 0, z: 0 },
+      scale: { x: 12, y: 3, z: 0.1 }
+    },
+    {
+      id: "wall2",
+      type: "wall",
+      position: { x: 0, y: 1.5, z: 6 },
+      rotation: { x: 0, y: 0, z: 0 },
+      scale: { x: 12, y: 3, z: 0.1 }
+    },
+    {
+      id: "wall3",
+      type: "wall",
+      position: { x: -6, y: 1.5, z: 0 },
+      rotation: { x: 0, y: Math.PI / 2, z: 0 },
+      scale: { x: 12, y: 3, z: 0.1 }
+    },
+    {
+      id: "wall4",
+      type: "wall",
+      position: { x: 6, y: 1.5, z: 0 },
+      rotation: { x: 0, y: Math.PI / 2, z: 0 },
+      scale: { x: 12, y: 3, z: 0.1 }
+    }
+  ];
+
+  // Calculate level bounds for extinguisher spawning
+  const levelBounds = calculateLevelBounds(environmentObjects);
+  
+  // Generate dynamic extinguishers based on fire hazards
+  const dynamicExtinguishers = generateDynamicExtinguishers(hazards, levelBounds, {
+    extinguishersPerFireGroup: 1,
+    minExtinguishersPerType: 1,
+    maxExtinguishersPerType: 1,
+    spawnRadius: 4.0,
+    randomSpawnChance: 0.0
+  });
+
+  // Add static objects
+  const staticObjects = [
+    {
+      id: "classDetector",
+      type: InteractiveObjectType.SmokeDetector,
+      position: { x: 0, y: 2.5, z: 0 },
+      isActive: false,
+      isCollected: false
+    }
+  ];
+
+  return {
     id: Level.FireClassification,
     name: "Fire Classification Challenge",
     description: "Test your knowledge of different fire types! Match the right extinguisher to each fire class.",
-    hazards: [
-      {
-        id: "classA2",
-        type: HazardType.ClassAFire,
-        position: { x: -3, y: 0.5, z: -2 },
-        isActive: true,
-        severity: 2,
-        isSmoking: false,
-        isExtinguished: false
-      },
-      {
-        id: "classB1",
-        type: HazardType.ClassBFire,
-        position: { x: 0, y: 0.5, z: -2 },
-        isActive: true,
-        severity: 2,
-        isSmoking: true,
-        isExtinguished: false
-      },
-      {
-        id: "classC1",
-        type: HazardType.ClassCFire,
-        position: { x: 3, y: 0.5, z: -2 },
-        isActive: true,
-        severity: 2,
-        isSmoking: false,
-        isExtinguished: false
-      }
-    ],
-    objects: [
-      {
-        id: "waterExt2",
-        type: InteractiveObjectType.WaterExtinguisher,
-        position: { x: -3, y: 0, z: 3 },
-        isActive: true,
-        isCollected: false
-      },
-      {
-        id: "foamExt1",
-        type: InteractiveObjectType.FoamExtinguisher,
-        position: { x: 0, y: 0, z: 3 },
-        isActive: true,
-        isCollected: false
-      },
-      {
-        id: "co2Ext1",
-        type: InteractiveObjectType.CO2Extinguisher,
-        position: { x: 3, y: 0, z: 3 },
-        isActive: true,
-        isCollected: false
-      },
-      {
-        id: "classDetector",
-        type: InteractiveObjectType.SmokeDetector,
-        position: { x: 0, y: 2.5, z: 0 },
-        isActive: false,
-        isCollected: false
-      }
-    ],
-    environmentObjects: [
-      {
-        id: "floor",
-        type: "floor",
-        position: { x: 0, y: 0, z: 0 },
-        rotation: { x: 0, y: 0, z: 0 },
-        scale: { x: 12, y: 0.1, z: 12 }
-      },
-      {
-        id: "wall1",
-        type: "wall",
-        position: { x: 0, y: 1.5, z: -6 },
-        rotation: { x: 0, y: 0, z: 0 },
-        scale: { x: 12, y: 3, z: 0.1 }
-      },
-      {
-        id: "wall2",
-        type: "wall",
-        position: { x: 0, y: 1.5, z: 6 },
-        rotation: { x: 0, y: 0, z: 0 },
-        scale: { x: 12, y: 3, z: 0.1 }
-      },
-      {
-        id: "wall3",
-        type: "wall",
-        position: { x: -6, y: 1.5, z: 0 },
-        rotation: { x: 0, y: Math.PI / 2, z: 0 },
-        scale: { x: 12, y: 3, z: 0.1 }
-      },
-      {
-        id: "wall4",
-        type: "wall",
-        position: { x: 6, y: 1.5, z: 0 },
-        rotation: { x: 0, y: Math.PI / 2, z: 0 },
-        scale: { x: 12, y: 3, z: 0.1 }
-      }
-    ],
+    hazards,
+    objects: [...dynamicExtinguishers, ...staticObjects],
+    environmentObjects,
     requiredScore: 600,
     timeLimit: 180,
     difficulty: DifficultyLevel.Intermediate,
@@ -541,100 +680,116 @@ export const LEVELS: Record<Level, LevelData> = {
       "Select appropriate extinguisher for each fire class",
       "Understand fire triangle principles"
     ]
-  },
-  [Level.EmergencyResponse]: {
+  };
+}
+
+// Create dynamic Emergency Response level with appropriate extinguishers
+function createEmergencyResponseLevel(): LevelData {
+  const hazards = [
+    {
+      id: "classK1",
+      type: HazardType.ClassKFire,
+      position: { x: -2, y: 0.8, z: -3 },
+      isActive: true,
+      severity: 3,
+      isSmoking: true,
+      isExtinguished: false
+    },
+    {
+      id: "gasLeak1",
+      type: HazardType.GasLeak,
+      position: { x: 2, y: 0.5, z: -3 },
+      isActive: true,
+      severity: 3,
+      isSmoking: false,
+      isExtinguished: false
+    },
+    {
+      id: "smokeArea1",
+      type: HazardType.SmokeScreen,
+      position: { x: 0, y: 1, z: 0 },
+      isActive: true,
+      severity: 2,
+      isSmoking: true,
+      isExtinguished: false
+    }
+  ];
+
+  const environmentObjects = [
+    {
+      id: "floor",
+      type: "floor",
+      position: { x: 0, y: 0, z: 0 },
+      rotation: { x: 0, y: 0, z: 0 },
+      scale: { x: 12, y: 0.1, z: 12 }
+    },
+    {
+      id: "wall1",
+      type: "wall",
+      position: { x: 0, y: 1.5, z: -6 },
+      rotation: { x: 0, y: 0, z: 0 },
+      scale: { x: 12, y: 3, z: 0.1 }
+    },
+    {
+      id: "wall2",
+      type: "wall",
+      position: { x: 0, y: 1.5, z: 6 },
+      rotation: { x: 0, y: 0, z: 0 },
+      scale: { x: 12, y: 3, z: 0.1 }
+    }
+  ];
+
+  // Calculate level bounds for extinguisher spawning
+  const levelBounds = calculateLevelBounds(environmentObjects);
+  
+  // Generate dynamic extinguishers based on fire hazards
+  const dynamicExtinguishers = generateDynamicExtinguishers(hazards, levelBounds, {
+    extinguishersPerFireGroup: 1,
+    minExtinguishersPerType: 1,
+    maxExtinguishersPerType: 2,
+    spawnRadius: 4.0,
+    randomSpawnChance: 0.1
+  });
+
+  // Add static objects
+  const staticObjects = [
+    {
+      id: "emergencyAlarm1",
+      type: InteractiveObjectType.EmergencyAlarm,
+      position: { x: 4, y: 1.8, z: 4 },
+      isActive: false,
+      isCollected: false
+    },
+    {
+      id: "firstAid1",
+      type: InteractiveObjectType.FirstAidKit,
+      position: { x: 0, y: 0, z: 4.5 },
+      isActive: true,
+      isCollected: false
+    },
+    {
+      id: "emergExit1",
+      type: InteractiveObjectType.EmergencyExit,
+      position: { x: -4.5, y: 1, z: 0 },
+      isActive: true,
+      isCollected: false
+    },
+    {
+      id: "emergExit2",
+      type: InteractiveObjectType.EmergencyExit,
+      position: { x: 4.5, y: 1, z: 0 },
+      isActive: true,
+      isCollected: false
+    }
+  ];
+
+  return {
     id: Level.EmergencyResponse,
     name: "Emergency Response Drill",
     description: "Handle multiple hazards and emergency scenarios like a true fire safety hero!",
-    hazards: [
-      {
-        id: "classK1",
-        type: HazardType.ClassKFire,
-        position: { x: -2, y: 0.8, z: -3 },
-        isActive: true,
-        severity: 3,
-        isSmoking: true,
-        isExtinguished: false
-      },
-      {
-        id: "gasLeak1",
-        type: HazardType.GasLeak,
-        position: { x: 2, y: 0.5, z: -3 },
-        isActive: true,
-        severity: 3,
-        isSmoking: false,
-        isExtinguished: false
-      },
-      {
-        id: "smokeArea1",
-        type: HazardType.SmokeScreen,
-        position: { x: 0, y: 1, z: 0 },
-        isActive: true,
-        severity: 2,
-        isSmoking: true,
-        isExtinguished: false
-      }
-    ],
-    objects: [
-      {
-        id: "wetChemExt1",
-        type: InteractiveObjectType.WetChemicalExtinguisher,
-        position: { x: -4, y: 0, z: 4 },
-        isActive: true,
-        isCollected: false
-      },
-      {
-        id: "emergencyAlarm1",
-        type: InteractiveObjectType.EmergencyAlarm,
-        position: { x: 4, y: 1.8, z: 4 },
-        isActive: false,
-        isCollected: false
-      },
-      {
-        id: "firstAid1",
-        type: InteractiveObjectType.FirstAidKit,
-        position: { x: 0, y: 0, z: 4.5 },
-        isActive: true,
-        isCollected: false
-      },
-      {
-        id: "emergExit1",
-        type: InteractiveObjectType.EmergencyExit,
-        position: { x: -4.5, y: 1, z: 0 },
-        isActive: true,
-        isCollected: false
-      },
-      {
-        id: "emergExit2",
-        type: InteractiveObjectType.EmergencyExit,
-        position: { x: 4.5, y: 1, z: 0 },
-        isActive: true,
-        isCollected: false
-      }
-    ],
-    environmentObjects: [
-      {
-        id: "floor",
-        type: "floor",
-        position: { x: 0, y: 0, z: 0 },
-        rotation: { x: 0, y: 0, z: 0 },
-        scale: { x: 12, y: 0.1, z: 12 }
-      },
-      {
-        id: "wall1",
-        type: "wall",
-        position: { x: 0, y: 1.5, z: -6 },
-        rotation: { x: 0, y: 0, z: 0 },
-        scale: { x: 12, y: 3, z: 0.1 }
-      },
-      {
-        id: "wall2",
-        type: "wall",
-        position: { x: 0, y: 1.5, z: 6 },
-        rotation: { x: 0, y: 0, z: 0 },
-        scale: { x: 12, y: 3, z: 0.1 }
-      }
-    ],
+    hazards,
+    objects: [...dynamicExtinguishers, ...staticObjects],
+    environmentObjects,
     requiredScore: 800,
     timeLimit: 240,
     difficulty: DifficultyLevel.Advanced,
@@ -644,81 +799,97 @@ export const LEVELS: Record<Level, LevelData> = {
       "Navigate through smoke using proper techniques",
       "Activate emergency alarm systems"
     ]
-  },
-  [Level.AdvancedRescue]: {
+  };
+}
+
+// Create dynamic Advanced Rescue level with appropriate extinguishers
+function createAdvancedRescueLevel(): LevelData {
+  const hazards = [
+    {
+      id: "classD1",
+      type: HazardType.ClassDFire,
+      position: { x: -3, y: 0.5, z: -2 },
+      isActive: true,
+      severity: 4,
+      isSmoking: true,
+      isExtinguished: false
+    },
+    {
+      id: "chemSpill1",
+      type: HazardType.ChemicalSpill,
+      position: { x: 3, y: 0.1, z: -2 },
+      isActive: true,
+      severity: 4,
+      isSmoking: false,
+      isExtinguished: false
+    },
+    {
+      id: "multiSmoke1",
+      type: HazardType.SmokeScreen,
+      position: { x: -1, y: 1.5, z: 1 },
+      isActive: true,
+      severity: 3,
+      isSmoking: true,
+      isExtinguished: false
+    },
+    {
+      id: "multiSmoke2",
+      type: HazardType.SmokeScreen,
+      position: { x: 1, y: 1.5, z: 1 },
+      isActive: true,
+      severity: 3,
+      isSmoking: true,
+      isExtinguished: false
+    }
+  ];
+
+  const environmentObjects = [
+    {
+      id: "floor",
+      type: "floor",
+      position: { x: 0, y: 0, z: 0 },
+      rotation: { x: 0, y: 0, z: 0 },
+      scale: { x: 14, y: 0.1, z: 14 }
+    }
+  ];
+
+  // Calculate level bounds for extinguisher spawning
+  const levelBounds = calculateLevelBounds(environmentObjects);
+  
+  // Generate dynamic extinguishers based on fire hazards
+  const dynamicExtinguishers = generateDynamicExtinguishers(hazards, levelBounds, {
+    extinguishersPerFireGroup: 1,
+    minExtinguishersPerType: 1,
+    maxExtinguishersPerType: 2,
+    spawnRadius: 5.0,
+    randomSpawnChance: 0.15
+  });
+
+  // Add static objects
+  const staticObjects = [
+    {
+      id: "escapeRope1",
+      type: InteractiveObjectType.EscapeRope,
+      position: { x: 5, y: 0, z: 4 },
+      isActive: true,
+      isCollected: false
+    },
+    {
+      id: "firstAid2",
+      type: InteractiveObjectType.FirstAidKit,
+      position: { x: 0, y: 0, z: 5 },
+      isActive: true,
+      isCollected: false
+    }
+  ];
+
+  return {
     id: Level.AdvancedRescue,
     name: "Advanced Rescue Operations",
     description: "Complex multi-hazard scenario requiring expert coordination and rescue techniques.",
-    hazards: [
-      {
-        id: "classD1",
-        type: HazardType.ClassDFire,
-        position: { x: -3, y: 0.5, z: -2 },
-        isActive: true,
-        severity: 4,
-        isSmoking: true,
-        isExtinguished: false
-      },
-      {
-        id: "chemSpill1",
-        type: HazardType.ChemicalSpill,
-        position: { x: 3, y: 0.1, z: -2 },
-        isActive: true,
-        severity: 4,
-        isSmoking: false,
-        isExtinguished: false
-      },
-      {
-        id: "multiSmoke1",
-        type: HazardType.SmokeScreen,
-        position: { x: -1, y: 1.5, z: 1 },
-        isActive: true,
-        severity: 3,
-        isSmoking: true,
-        isExtinguished: false
-      },
-      {
-        id: "multiSmoke2",
-        type: HazardType.SmokeScreen,
-        position: { x: 1, y: 1.5, z: 1 },
-        isActive: true,
-        severity: 3,
-        isSmoking: true,
-        isExtinguished: false
-      }
-    ],
-    objects: [
-      {
-        id: "powderExt1",
-        type: InteractiveObjectType.PowderExtinguisher,
-        position: { x: -5, y: 0, z: 4 },
-        isActive: true,
-        isCollected: false
-      },
-      {
-        id: "escapeRope1",
-        type: InteractiveObjectType.EscapeRope,
-        position: { x: 5, y: 0, z: 4 },
-        isActive: true,
-        isCollected: false
-      },
-      {
-        id: "firstAid2",
-        type: InteractiveObjectType.FirstAidKit,
-        position: { x: 0, y: 0, z: 5 },
-        isActive: true,
-        isCollected: false
-      }
-    ],
-    environmentObjects: [
-      {
-        id: "floor",
-        type: "floor",
-        position: { x: 0, y: 0, z: 0 },
-        rotation: { x: 0, y: 0, z: 0 },
-        scale: { x: 14, y: 0.1, z: 14 }
-      }
-    ],
+    hazards,
+    objects: [...dynamicExtinguishers, ...staticObjects],
+    environmentObjects,
     requiredScore: 1000,
     timeLimit: 300,
     difficulty: DifficultyLevel.Expert,
@@ -728,164 +899,177 @@ export const LEVELS: Record<Level, LevelData> = {
       "Navigate complex smoke-filled environments",
       "Use escape ropes for emergency evacuation"
     ]
-  },
-  [Level.BFPCertification]: {
+  };
+}
+
+// Create dynamic BFP Certification level with appropriate extinguishers
+function createBFPCertificationLevel(): LevelData {
+  const hazards = [
+    {
+      id: "masterClassA",
+      type: HazardType.ClassAFire,
+      position: { x: -4, y: 0.5, z: -4 },
+      isActive: true,
+      severity: 3,
+      isSmoking: true,
+      isExtinguished: false
+    },
+    {
+      id: "masterClassB",
+      type: HazardType.ClassBFire,
+      position: { x: 0, y: 0.5, z: -4 },
+      isActive: true,
+      severity: 3,
+      isSmoking: true,
+      isExtinguished: false
+    },
+    {
+      id: "masterClassC",
+      type: HazardType.ClassCFire,
+      position: { x: 4, y: 0.5, z: -4 },
+      isActive: true,
+      severity: 3,
+      isSmoking: false,
+      isExtinguished: false
+    },
+    {
+      id: "masterClassK",
+      type: HazardType.ClassKFire,
+      position: { x: -2, y: 0.8, z: 0 },
+      isActive: true,
+      severity: 4,
+      isSmoking: true,
+      isExtinguished: false
+    },
+    {
+      id: "masterGas",
+      type: HazardType.GasLeak,
+      position: { x: 2, y: 0.5, z: 0 },
+      isActive: true,
+      severity: 4,
+      isSmoking: false,
+      isExtinguished: false
+    },
+    {
+      id: "masterSmoke1",
+      type: HazardType.SmokeScreen,
+      position: { x: -2, y: 1.5, z: 2 },
+      isActive: true,
+      severity: 4,
+      isSmoking: true,
+      isExtinguished: false
+    },
+    {
+      id: "masterSmoke2",
+      type: HazardType.SmokeScreen,
+      position: { x: 2, y: 1.5, z: 2 },
+      isActive: true,
+      severity: 4,
+      isSmoking: true,
+      isExtinguished: false
+    }
+  ];
+
+  const environmentObjects = [
+    {
+      id: "floor",
+      type: "floor",
+      position: { x: 0, y: 0, z: 0 },
+      rotation: { x: 0, y: 0, z: 0 },
+      scale: { x: 16, y: 0.1, z: 16 }
+    },
+    {
+      id: "wall1",
+      type: "wall",
+      position: { x: 0, y: 1.5, z: -8 },
+      rotation: { x: 0, y: 0, z: 0 },
+      scale: { x: 16, y: 3, z: 0.1 }
+    },
+    {
+      id: "wall2",
+      type: "wall",
+      position: { x: 0, y: 1.5, z: 8 },
+      rotation: { x: 0, y: 0, z: 0 },
+      scale: { x: 16, y: 3, z: 0.1 }
+    },
+    {
+      id: "wall3",
+      type: "wall",
+      position: { x: -8, y: 1.5, z: 0 },
+      rotation: { x: 0, y: Math.PI / 2, z: 0 },
+      scale: { x: 16, y: 3, z: 0.1 }
+    },
+    {
+      id: "wall4",
+      type: "wall",
+      position: { x: 8, y: 1.5, z: 0 },
+      rotation: { x: 0, y: Math.PI / 2, z: 0 },
+      scale: { x: 16, y: 3, z: 0.1 }
+    }
+  ];
+
+  // Calculate level bounds for extinguisher spawning
+  const levelBounds = calculateLevelBounds(environmentObjects);
+  
+  // Generate dynamic extinguishers based on fire hazards
+  const dynamicExtinguishers = generateDynamicExtinguishers(hazards, levelBounds, {
+    extinguishersPerFireGroup: 1,
+    minExtinguishersPerType: 1,
+    maxExtinguishersPerType: 2,
+    spawnRadius: 6.0,
+    randomSpawnChance: 0.2
+  });
+
+  // Add static objects
+  const staticObjects = [
+    {
+      id: "masterAlarm",
+      type: InteractiveObjectType.EmergencyAlarm,
+      position: { x: 6, y: 1.8, z: 5 },
+      isActive: false,
+      isCollected: false
+    }
+  ];
+
+  return {
     id: Level.BFPCertification,
     name: "BFP Master Certification",
     description: "Ultimate fire safety challenge! Prove you're ready for BFP certification with Captain Apoy's master test.",
-    hazards: [
-      {
-        id: "masterClassA",
-        type: HazardType.ClassAFire,
-        position: { x: -4, y: 0.5, z: -4 },
-        isActive: true,
-        severity: 3,
-        isSmoking: true,
-        isExtinguished: false
-      },
-      {
-        id: "masterClassB",
-        type: HazardType.ClassBFire,
-        position: { x: 0, y: 0.5, z: -4 },
-        isActive: true,
-        severity: 3,
-        isSmoking: true,
-        isExtinguished: false
-      },
-      {
-        id: "masterClassC",
-        type: HazardType.ClassCFire,
-        position: { x: 4, y: 0.5, z: -4 },
-        isActive: true,
-        severity: 3,
-        isSmoking: false,
-        isExtinguished: false
-      },
-      {
-        id: "masterClassK",
-        type: HazardType.ClassKFire,
-        position: { x: -2, y: 0.8, z: 0 },
-        isActive: true,
-        severity: 4,
-        isSmoking: true,
-        isExtinguished: false
-      },
-      {
-        id: "masterGas",
-        type: HazardType.GasLeak,
-        position: { x: 2, y: 0.5, z: 0 },
-        isActive: true,
-        severity: 4,
-        isSmoking: false,
-        isExtinguished: false
-      },
-      {
-        id: "masterSmoke1",
-        type: HazardType.SmokeScreen,
-        position: { x: -2, y: 1.5, z: 2 },
-        isActive: true,
-        severity: 4,
-        isSmoking: true,
-        isExtinguished: false
-      },
-      {
-        id: "masterSmoke2",
-        type: HazardType.SmokeScreen,
-        position: { x: 2, y: 1.5, z: 2 },
-        isActive: true,
-        severity: 4,
-        isSmoking: true,
-        isExtinguished: false
-      }
-    ],
-    objects: [
-      {
-        id: "masterWater",
-        type: InteractiveObjectType.WaterExtinguisher,
-        position: { x: -6, y: 0, z: 5 },
-        isActive: true,
-        isCollected: false
-      },
-      {
-        id: "masterFoam",
-        type: InteractiveObjectType.FoamExtinguisher,
-        position: { x: -3, y: 0, z: 5 },
-        isActive: true,
-        isCollected: false
-      },
-      {
-        id: "masterCO2",
-        type: InteractiveObjectType.CO2Extinguisher,
-        position: { x: 0, y: 0, z: 5 },
-        isActive: true,
-        isCollected: false
-      },
-      {
-        id: "masterWetChem",
-        type: InteractiveObjectType.WetChemicalExtinguisher,
-        position: { x: 3, y: 0, z: 5 },
-        isActive: true,
-        isCollected: false
-      },
-      {
-        id: "masterAlarm",
-        type: InteractiveObjectType.EmergencyAlarm,
-        position: { x: 6, y: 1.8, z: 5 },
-        isActive: false,
-        isCollected: false
-      }
-    ],
-    environmentObjects: [
-      {
-        id: "floor",
-        type: "floor",
-        position: { x: 0, y: 0, z: 0 },
-        rotation: { x: 0, y: 0, z: 0 },
-        scale: { x: 16, y: 0.1, z: 16 }
-      },
-      {
-        id: "wall1",
-        type: "wall",
-        position: { x: 0, y: 1.5, z: -8 },
-        rotation: { x: 0, y: 0, z: 0 },
-        scale: { x: 16, y: 3, z: 0.1 }
-      },
-      {
-        id: "wall2",
-        type: "wall",
-        position: { x: 0, y: 1.5, z: 8 },
-        rotation: { x: 0, y: 0, z: 0 },
-        scale: { x: 16, y: 3, z: 0.1 }
-      },
-      {
-        id: "wall3",
-        type: "wall",
-        position: { x: -8, y: 1.5, z: 0 },
-        rotation: { x: 0, y: Math.PI / 2, z: 0 },
-        scale: { x: 16, y: 3, z: 0.1 }
-      },
-      {
-        id: "wall4",
-        type: "wall",
-        position: { x: 8, y: 1.5, z: 0 },
-        rotation: { x: 0, y: Math.PI / 2, z: 0 },
-        scale: { x: 16, y: 3, z: 0.1 }
-      }
-    ],
+    hazards,
+    objects: [...dynamicExtinguishers, ...staticObjects],
+    environmentObjects,
     requiredScore: 1500,
-    timeLimit: 420,
+    timeLimit: 360,
     difficulty: DifficultyLevel.Master,
     learningObjectives: [
-      "Master all fire classes and appropriate extinguisher types",
-      "Demonstrate expert PASS technique under pressure",
-      "Coordinate complex emergency response procedures",
-      "Achieve BFP fire safety certification standards"
+      "Demonstrate mastery of all fire classes and extinguisher types",
+      "Coordinate complex multi-hazard emergency response",
+      "Apply strategic thinking in high-pressure scenarios",
+      "Achieve BFP certification standards"
     ]
-  }
+  };
+}
+
+// Level data for the game
+export const LEVELS: Record<Level, LevelData> = {
+  [Level.Kitchen]: createKitchenLevel(),
+  [Level.LivingRoom]: createLivingRoomLevel(),
+  [Level.Bedroom]: createBedroomLevel(),
+  [Level.BasicTraining]: createBasicTrainingLevel(),
+  [Level.FireClassification]: createFireClassificationLevel(),
+  [Level.EmergencyResponse]: createEmergencyResponseLevel(),
+  [Level.AdvancedRescue]: createAdvancedRescueLevel(),
+  [Level.BFPCertification]: createBFPCertificationLevel()
 };
 
 // Safety tips to display in the game
 export const SAFETY_TIPS: SafetyTip[] = [
+  {
+    id: "extinguisher-mismatch",
+    title: "Wrong Extinguisher Type!",
+    content: "Different fires require different extinguishers! RED=Class A (wood/paper), CREAM=Class B (liquids), BLACK=Class C (electrical), BLUE=Class D (metals), YELLOW=Class K (cooking oils). Using the wrong type can spread the fire!",
+    category: SafetyTipCategory.Response
+  },
   {
     id: "tip1",
     title: "Keep an Eye on the Stove",

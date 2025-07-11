@@ -220,6 +220,29 @@ export default function Character() {
       }
     }
     
+    // Check if player is touching fire directly and take HP damage
+    const activeFireHazards = hazards.filter(h => h.isActive && !h.isExtinguished);
+    let inFire = false;
+    
+    for (const hazard of activeFireHazards) {
+      const dx = position.x - hazard.position.x;
+      const dz = position.z - hazard.position.z;
+      const distanceSquared = dx * dx + dz * dz;
+      
+      // Smaller distance for direct fire contact (more dangerous than smoke)
+      const fireContactDistance = GAME_CONSTANTS.DAMAGE_DISTANCE * 0.6;
+      
+      if (distanceSquared < fireContactDistance * fireContactDistance) {
+        // Player is touching fire, take direct HP damage
+        const fireDamage = PLAYER_CONSTANTS.HEALTH_DEPLETION_RATE * hazard.severity * delta;
+        console.log(`Player taking fire damage: ${fireDamage} HP`);
+        // Access takeDamage function directly from player store
+        usePlayer.getState().takeDamage(fireDamage);
+        inFire = true;
+        break;
+      }
+    }
+    
     // If not in smoke, gradually replenish oxygen
     if (!inSmoke) {
       replenishOxygen(PLAYER_CONSTANTS.OXYGEN_DEPLETION_RATE * 0.5 * delta);

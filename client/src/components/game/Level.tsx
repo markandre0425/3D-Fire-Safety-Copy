@@ -24,47 +24,38 @@ export default function Level() {
     collectObject,
     activateSmokeDetector,
     isPaused,
-    currentLevel
+    currentLevel,
+    startLevel
   } = useFireSafety();
-  
-  // Debug: Log interactive objects on each render
-  console.log("Level component - Interactive objects:", interactiveObjects);
   
   const playerState = usePlayer();
   const [isExtinguishing, setIsExtinguishing] = useState(false);
+  const [debugInfo, setDebugInfo] = useState({
+    hazardsCount: 0,
+    objectsCount: 0,
+    playerPosition: { x: 0, y: 0, z: 0 },
+    hasExtinguisher: false
+  });
 
-  
   const lastUpdateTime = useRef(Date.now());
   const extinguishCooldown = useRef(0);
   
-  // Load current level configuration
-  // const levelConfig = getLevelConfig(1); // Start with level 1 for now
+  // Reload level to show new stoves on furniture (trigger this once)
+  useEffect(() => {
+    console.log("🔄 Reloading level to show stoves on red furniture...");
+    startLevel(currentLevel);
+  }, []);
   
-  // Initialize level-specific items
-  // useEffect(() => {
-  //   if (levelConfig) {
-  //     // Set up gas masks from level config
-  //     const levelGasMasks = levelConfig.items
-  //       .filter(item => item.type === 'gasMask')
-  //       .map(item => ({
-  //         id: item.id,
-  //         position: item.position,
-  //         collected: false
-  //       }));
-  //     setGasMasks(levelGasMasks);
-      
-  //     // Set up smoke zones from level config
-  //     const levelSmokeZones = levelConfig.hazards
-  //       .filter(hazard => hazard.type === 'smoke')
-  //       .map(hazard => ({
-  //         id: hazard.id,
-  //         position: hazard.position,
-  //         intensity: hazard.intensity,
-  //         radius: hazard.smokeRadius || 2
-  //       }));
-  //     setSmokeZones(levelSmokeZones);
-  //   }
-  // }, [levelConfig]);
+  // Debug: Log interactive objects on each render
+  useEffect(() => {
+    console.log("🎯 Level component - Interactive objects:", interactiveObjects);
+    setDebugInfo({
+      hazardsCount: hazards.length,
+      objectsCount: interactiveObjects.length,
+      playerPosition: playerState.position,
+      hasExtinguisher: playerState.hasExtinguisher
+    });
+  }, [hazards, interactiveObjects, playerState.position, playerState.hasExtinguisher]);
   
   // Get keyboard controls
   const actionPressed = useKeyboardControls<Controls>(state => state.action);
@@ -90,6 +81,8 @@ export default function Level() {
   // Handle player interaction with objects
   useEffect(() => {
     if (actionPressed) {
+      console.log("🎮 Action key pressed - checking for interactive objects...");
+      
       // Check for nearby interactive objects
       interactiveObjects.forEach(obj => {
         if (obj.isCollected || (obj.type === "SmokeDetector" && obj.isActive)) return;
@@ -106,22 +99,23 @@ export default function Level() {
               obj.type === "PowderExtinguisher" ||
               obj.type === "WetChemicalExtinguisher") {
             collectObject(obj.id);
+            console.log(`✅ Collected extinguisher: ${obj.type}`);
           } else if (obj.type === "SmokeDetector") {
             activateSmokeDetector(obj.id);
+            console.log(`✅ Activated smoke detector: ${obj.id}`);
           }
           
-          console.log(`Interacted with ${obj.type}: ${obj.id}`);
+          console.log(`🎯 Interacted with ${obj.type}: ${obj.id}`);
         }
       });
-      
-
     }
-      }, [actionPressed, interactiveObjects, playerState.position, collectObject, activateSmokeDetector]);
+  }, [actionPressed, interactiveObjects, playerState.position, collectObject, activateSmokeDetector]);
   
   // Handle fire extinguisher usage with enhanced effects
   useEffect(() => {
     if (extinguishPressed && playerState.hasExtinguisher && extinguishCooldown.current <= 0) {
       setIsExtinguishing(true);
+      console.log("🔥 Using fire extinguisher...");
       
       // Check for nearby hazards to extinguish
       let extinguishedAny = false;
@@ -135,9 +129,13 @@ export default function Level() {
         if (distanceSquared < GAME_CONSTANTS.EXTINGUISHER_RANGE * GAME_CONSTANTS.EXTINGUISHER_RANGE) {
           extinguishHazard(hazard.id);
           extinguishedAny = true;
-          console.log(`Extinguished hazard: ${hazard.id}`);
+          console.log(`✅ Extinguished hazard: ${hazard.id}`);
         }
       });
+      
+      if (!extinguishedAny) {
+        console.log("⚠️ No hazards in range to extinguish");
+      }
       
       // Set cooldown to prevent spam and allow for animation
       extinguishCooldown.current = 0.5;
@@ -153,6 +151,27 @@ export default function Level() {
   
   return (
     <>
+      {/* Debug Info - Only show in development */}
+      {process.env.NODE_ENV === 'development' && (
+        <div style={{
+          position: 'absolute',
+          top: '10px',
+          left: '10px',
+          background: 'rgba(0,0,0,0.8)',
+          color: 'white',
+          padding: '10px',
+          borderRadius: '5px',
+          fontSize: '12px',
+          fontFamily: 'monospace',
+          zIndex: 1000
+        }}>
+          <div>🎯 Hazards: {debugInfo.hazardsCount}</div>
+          <div>📦 Objects: {debugInfo.objectsCount}</div>
+          <div>👤 Position: ({debugInfo.playerPosition.x.toFixed(1)}, {debugInfo.playerPosition.z.toFixed(1)})</div>
+          <div>🧯 Extinguisher: {debugInfo.hasExtinguisher ? 'Yes' : 'No'}</div>
+        </div>
+      )}
+      
       <Lights />
       <HomeEnvironment />
       
@@ -171,7 +190,7 @@ export default function Level() {
       
       {/* Render interactive objects */}
       {interactiveObjects.map(obj => {
-        console.log("Rendering interactive object:", obj);
+        console.log("🎨 Rendering interactive object:", obj);
         return (
           <ExtinguisherPickup 
             key={obj.id} 
@@ -180,8 +199,6 @@ export default function Level() {
           />
         );
       })}
-      
-
       
       {/* Fire extinguisher effects */}
       {playerState.hasExtinguisher && (

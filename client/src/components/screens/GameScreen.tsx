@@ -1,4 +1,4 @@
-import { Suspense, useEffect } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { OrbitControls, PerspectiveCamera } from "@react-three/drei";
 import Level from "../game/Level";
 import KeyboardManager from "../game/KeyboardManager";
@@ -6,16 +6,33 @@ import { useFireSafety } from "@/lib/stores/useFireSafety";
 import { usePlayer } from "@/lib/stores/usePlayer";
 import { Level as LevelType } from "@/lib/types";
 import { useGame } from "@/lib/stores/useGame";
+import EnhancedGameDemo from "../game/EnhancedGameDemo";
 
 export default function GameScreen() {
   const { startLevel, levelTime, isLevelComplete } = useFireSafety();
   const { health, score } = usePlayer();
   const { end } = useGame();
   
+  // Enhanced mode toggle - press 'M' to switch between modes
+  const [isEnhancedMode, setIsEnhancedMode] = useState(false);
+  
   // Start the kitchen level when game screen loads
   useEffect(() => {
     startLevel(LevelType.Kitchen);
   }, [startLevel]);
+  
+  // Enhanced mode toggle controls
+  useEffect(() => {
+    const handleKeyPress = (event: KeyboardEvent) => {
+      if (event.key.toLowerCase() === 'm') {
+        setIsEnhancedMode(prev => !prev);
+        console.log(`Switched to ${!isEnhancedMode ? 'Enhanced' : 'Original'} mode`);
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [isEnhancedMode]);
   
   // Check for game over conditions
   useEffect(() => {
@@ -61,29 +78,50 @@ export default function GameScreen() {
   
   return (
     <>
-      {/* Camera */}
-      <PerspectiveCamera
-        makeDefault
-        position={[0, 5, 10]}
-        fov={50}
-      />
+      {/* Mode indicator */}
+      <div style={{
+        position: 'absolute',
+        top: '20px',
+        right: '20px',
+        background: 'rgba(0,0,0,0.7)',
+        color: 'white',
+        padding: '10px',
+        borderRadius: '5px',
+        zIndex: 1000,
+        fontSize: '14px',
+        fontFamily: 'monospace'
+      }}>
+        Mode: {isEnhancedMode ? 'Enhanced' : 'Original'}<br/>
+        Press 'M' to toggle
+      </div>
       
-      {/* Controls - limit to prevent going below the floor */}
-      <OrbitControls 
-        enablePan={false}
-        minPolarAngle={Math.PI / 6}
-        maxPolarAngle={Math.PI / 2.2}
-        minDistance={5}
-        maxDistance={15}
-      />
+      {!isEnhancedMode && (
+        <>
+          {/* Original Camera */}
+          <PerspectiveCamera
+            makeDefault
+            position={[0, 5, 10]}
+            fov={50}
+          />
+          
+          {/* Original Controls - limit to prevent going below the floor */}
+          <OrbitControls 
+            enablePan={false}
+            minPolarAngle={Math.PI / 6}
+            maxPolarAngle={Math.PI / 2.2}
+            minDistance={5}
+            maxDistance={15}
+          />
+        </>
+      )}
       
       {/* Game level */}
       <Suspense fallback={null}>
-        <Level />
+        {isEnhancedMode ? <EnhancedGameDemo /> : <Level />}
       </Suspense>
       
       {/* Keyboard manager component to handle key presses */}
-      <KeyboardManager />
+      {!isEnhancedMode && <KeyboardManager />}
     </>
   );
 }

@@ -45,6 +45,15 @@ export enum HazardType {
   Fireplace = "Fireplace",
   SpacerHeater = "SpacerHeater",
   CloggedDryer = "CloggedDryer",
+  // Kitchen Appliances
+  Microwave = "Microwave",
+  CoffeeMaker = "CoffeeMaker", 
+  DeepFryer = "DeepFryer",
+  ElectricKettle = "ElectricKettle",
+  RiceCooker = "RiceCooker",
+  Blender = "Blender",
+  Dishwasher = "Dishwasher",
+  // Fire Classifications
   ClassAFire = "ClassAFire",        // Ordinary combustibles (wood, paper, cloth)
   ClassBFire = "ClassBFire",        // Flammable liquids (gasoline, oil, paint)
   ClassCFire = "ClassCFire",        // Electrical equipment
@@ -131,4 +140,30 @@ export enum DifficultyLevel {
   Advanced = "Advanced",
   Expert = "Expert",
   Master = "Master"
+}
+
+// Fire Classification System (Classes A-K)
+export enum FireClass {
+  ClassA = "ClassA",  // Ordinary combustibles (wood, paper, cloth, fabric)
+  ClassB = "ClassB",  // Flammable liquids (gasoline, oil, paint, grease)
+  ClassC = "ClassC",  // Electrical equipment (live electrical fires)
+  ClassD = "ClassD",  // Combustible metals (magnesium, sodium, titanium)
+  ClassK = "ClassK"   // Cooking oils and fats (commercial cooking equipment)
+}
+
+// Extinguisher Color Coding (International Standards)
+export enum ExtinguisherColor {
+  RED = "#DC143C",        // Water extinguishers (Class A)
+  CREAM = "#F5F5DC",      // Foam extinguishers (Class B)
+  BLACK = "#2C2C2C",      // CO2 extinguishers (Class C)
+  BLUE = "#1E90FF",       // Dry powder extinguishers (Class D)
+  YELLOW = "#FFD700"      // Wet chemical extinguishers (Class K)
+}
+
+// Mapping extinguisher types to colors and fire classes
+export interface ExtinguisherInfo {
+  color: ExtinguisherColor;
+  fireClasses: FireClass[];
+  name: string;
+  description: string;
 }

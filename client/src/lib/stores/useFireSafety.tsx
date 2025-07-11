@@ -4,6 +4,12 @@ import { HazardState, InteractiveObject, Level, LevelData } from "../types";
 import { LEVELS, SAFETY_TIPS, GAME_CONSTANTS } from "../constants";
 import { usePlayer } from "./usePlayer";
 import { useAudio } from "./useAudio";
+import { 
+  isExtinguisherEffective, 
+  getHazardFireClasses, 
+  getExtinguisherInfo,
+  getAppropriateExtinguishers 
+} from "../fireClassification";
 
 interface FireSafetyState {
   currentLevel: Level;
@@ -136,18 +142,67 @@ export const useFireSafety = create<FireSafetyState>()(
     
     extinguishHazard: (hazardId: string) => {
       const { hazards } = get();
-      const updatedHazards = hazards.map(hazard => 
-        hazard.id === hazardId ? { ...hazard, isExtinguished: true, isSmoking: false } : hazard
+      const playerState = usePlayer.getState();
+      const hazard = hazards.find(h => h.id === hazardId);
+      
+      if (!hazard) {
+        console.log(`Hazard ${hazardId} not found`);
+        return;
+      }
+      
+      // Check if player has an extinguisher
+      if (!playerState.hasExtinguisher || !playerState.extinguisherType) {
+        console.log("No extinguisher available");
+        return;
+      }
+      
+      // Check if the extinguisher is effective against this hazard type
+      const isEffective = isExtinguisherEffective(playerState.extinguisherType, hazard.type);
+      const hazardFireClasses = getHazardFireClasses(hazard.type);
+      const extinguisherInfo = getExtinguisherInfo(playerState.extinguisherType);
+      const appropriateExtinguishers = getAppropriateExtinguishers(hazard.type);
+      
+      console.log(`Attempting to extinguish ${hazard.type} (Fire Classes: ${hazardFireClasses.join(', ')}) with ${extinguisherInfo?.name}`);
+      console.log(`Extinguisher effective: ${isEffective}`);
+      console.log(`Appropriate extinguishers: ${appropriateExtinguishers.map(e => getExtinguisherInfo(e)?.name).join(', ')}`);
+      
+      if (!isEffective) {
+        // Wrong extinguisher type - provide feedback but don't extinguish
+        console.log(`❌ Wrong extinguisher type! ${extinguisherInfo?.name} is not effective against ${hazard.type}`);
+        console.log(`💡 Use one of these instead: ${appropriateExtinguishers.map(e => getExtinguisherInfo(e)?.name).join(', ')}`);
+        
+        // Play error sound and reduce score for wrong extinguisher use
+        useAudio.getState().playHit(); // Could be changed to a different error sound
+        usePlayer.getState().addScore(-GAME_CONSTANTS.POINTS_FOR_EXTINGUISHING / 2); // Penalty
+        
+        // Show safety tip about proper extinguisher selection
+        get().showSafetyTip("extinguisher-mismatch");
+        
+        return;
+      }
+      
+      // Effective extinguisher - proceed with extinguishing
+      const updatedHazards = hazards.map(h => 
+        h.id === hazardId ? { ...h, isExtinguished: true, isSmoking: false } : h
       );
       
-      // Add points for extinguishing a hazard
-      usePlayer.getState().addScore(GAME_CONSTANTS.POINTS_FOR_EXTINGUISHING);
+      // Calculate bonus points for using correct extinguisher
+      let points = GAME_CONSTANTS.POINTS_FOR_EXTINGUISHING;
       
-      // Play sound effect
-      useAudio.getState().playHit();
+      // Bonus for perfect match (extinguisher specifically designed for this fire class)
+      if (extinguisherInfo && hazardFireClasses.every(cls => extinguisherInfo.fireClasses.includes(cls))) {
+        points *= 1.5; // 50% bonus for perfect match
+        console.log(`🎯 Perfect extinguisher match! Bonus points awarded.`);
+      }
+      
+      // Add points for successful extinguishing
+      usePlayer.getState().addScore(Math.round(points));
+      
+      // Play success sound effect
+      useAudio.getState().playSuccess();
       
       set({ hazards: updatedHazards });
-      console.log(`Hazard ${hazardId} extinguished`);
+      console.log(`✅ Hazard ${hazardId} successfully extinguished with ${extinguisherInfo?.name}`);
       
       // Check if all hazards are extinguished to complete level
       if (updatedHazards.every(h => h.isExtinguished)) {

@@ -1,6 +1,6 @@
 import { useRef } from "react";
 import { useFrame } from "@react-three/fiber";
-import { Mesh, Group } from "three";
+import { Mesh, Group, MeshStandardMaterial } from "three";
 import { InteractiveObject } from "@/lib/types";
 
 interface SmokeDetectorProps {
@@ -20,7 +20,7 @@ export default function SmokeDetector({ object, isActive }: SmokeDetectorProps) 
       const blinkState = Math.floor(Date.now() / 1000) % 2 === 0;
       
       // Update emissive color based on blink state
-      const material = indicatorRef.current.material as THREE.MeshStandardMaterial;
+      const material = indicatorRef.current.material as MeshStandardMaterial;
       material.emissive.set(blinkState ? "#FF0000" : "#330000");
       material.emissiveIntensity = blinkState ? 2 : 0.5;
     }

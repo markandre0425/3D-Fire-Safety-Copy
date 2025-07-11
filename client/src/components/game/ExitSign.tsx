@@ -1,6 +1,6 @@
 import { useRef } from "react";
 import { useFrame } from "@react-three/fiber";
-import { Mesh, Group } from "three";
+import { Mesh, Group, MeshStandardMaterial } from "three";
 import { InteractiveObject } from "@/lib/types";
 
 interface ExitSignProps {
@@ -16,7 +16,7 @@ export default function ExitSign({ object }: ExitSignProps) {
   useFrame(() => {
     if (textRef.current) {
       // Pulse the glow intensity
-      const material = textRef.current.material as THREE.MeshStandardMaterial;
+      const material = textRef.current.material as MeshStandardMaterial;
       material.emissiveIntensity = 1 + Math.sin(Date.now() * 0.002) * 0.5;
     }
   });
