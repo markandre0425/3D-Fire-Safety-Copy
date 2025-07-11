@@ -36,9 +36,15 @@ export default function Level() {
     playerPosition: { x: 0, y: 0, z: 0 },
     hasExtinguisher: false
   });
+  const [testCubeRotation, setTestCubeRotation] = useState(0);
 
   const lastUpdateTime = useRef(Date.now());
   const extinguishCooldown = useRef(0);
+  
+  // Test cube animation
+  useFrame((_, delta) => {
+    setTestCubeRotation((prev: number) => prev + delta);
+  });
   
   // Reload level to show new stoves on furniture (trigger this once)
   useEffect(() => {
@@ -151,6 +157,22 @@ export default function Level() {
   
   return (
     <>
+      {/* TEST: Simple spinning cube to verify 3D rendering works */}
+      <mesh position={[0, 2, 0]} rotation={[testCubeRotation, testCubeRotation, 0]}>
+        <boxGeometry args={[1, 1, 1]} />
+        <meshStandardMaterial color="red" />
+      </mesh>
+      
+      {/* TEST: Simple green ground plane */}
+      <mesh position={[0, -0.5, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[10, 10]} />
+        <meshStandardMaterial color="green" />
+      </mesh>
+      
+      {/* TEST: Basic lighting */}
+      <ambientLight intensity={0.5} />
+      <directionalLight position={[5, 5, 5]} intensity={1} />
+      
       {/* Debug Info - Only show in development */}
       {process.env.NODE_ENV === 'development' && (
         <div style={{
