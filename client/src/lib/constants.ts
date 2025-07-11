@@ -1,4 +1,250 @@
-import { Level, LevelData, SafetyTip, SafetyTipCategory, HazardType, InteractiveObjectType, DifficultyLevel } from "./types";
+import { Level, LevelData, SafetyTip, SafetyTipCategory, HazardType, InteractiveObjectType, DifficultyLevel, FireClass, RandomFireConfig, ApplianceHazard, HazardState, InteractiveObject } from "./types";
+
+// Fire Class Colors (Educational and Realistic)
+export const FIRE_CLASS_COLORS = {
+  [FireClass.A]: "#FF6B35", // Orange-Red for ordinary combustibles
+  [FireClass.B]: "#FF1744", // Bright Red for flammable liquids  
+  [FireClass.C]: "#3F51B5", // Blue for electrical fires
+  [FireClass.D]: "#9C27B0", // Purple for combustible metals
+  [FireClass.K]: "#FFA726"  // Amber for cooking oils/grease
+};
+
+// Extinguisher Colors (Matching Fire Classes)
+export const EXTINGUISHER_COLORS = {
+  [FireClass.A]: "#FF6B35", // Water - Orange-Red
+  [FireClass.B]: "#FF1744", // Foam - Bright Red  
+  [FireClass.C]: "#3F51B5", // CO2 - Blue
+  [FireClass.D]: "#9C27B0", // Powder - Purple
+  [FireClass.K]: "#FFA726"  // Wet Chemical - Amber
+};
+
+// Fire Class Descriptions (Educational Content)
+export const FIRE_CLASS_DESCRIPTIONS = {
+  [FireClass.A]: "Ordinary combustibles: wood, paper, cloth, plastic",
+  [FireClass.B]: "Flammable liquids: gasoline, oil, paint, alcohol", 
+  [FireClass.C]: "Electrical equipment: appliances, wiring, electronics",
+  [FireClass.D]: "Combustible metals: magnesium, titanium, sodium",
+  [FireClass.K]: "Cooking oils and fats: deep fryers, grease fires"
+};
+
+// Appliance Fire Configurations
+export const APPLIANCE_FIRE_CONFIG = {
+  [HazardType.Microwave]: {
+    baseFireClass: FireClass.C,
+    ignitionChance: 0.15,
+    severity: 2,
+    description: "Microwave electrical fire"
+  },
+  [HazardType.Toaster]: {
+    baseFireClass: FireClass.C,
+    ignitionChance: 0.25,
+    severity: 2,
+    description: "Toaster electrical/crumb fire"
+  },
+  [HazardType.Television]: {
+    baseFireClass: FireClass.C,
+    ignitionChance: 0.10,
+    severity: 3,
+    description: "Television electrical fire"
+  },
+  [HazardType.ComputerTower]: {
+    baseFireClass: FireClass.C,
+    ignitionChance: 0.12,
+    severity: 2,
+    description: "Computer electrical fire"
+  },
+  [HazardType.Coffeemaker]: {
+    baseFireClass: FireClass.C,
+    ignitionChance: 0.18,
+    severity: 2,
+    description: "Coffee maker electrical fire"
+  },
+  [HazardType.AirConditioner]: {
+    baseFireClass: FireClass.C,
+    ignitionChance: 0.08,
+    severity: 3,
+    description: "Air conditioner electrical fire"
+  },
+  [HazardType.WashingMachine]: {
+    baseFireClass: FireClass.C,
+    ignitionChance: 0.10,
+    severity: 3,
+    description: "Washing machine electrical fire"
+  },
+  [HazardType.Refrigerator]: {
+    baseFireClass: FireClass.C,
+    ignitionChance: 0.05,
+    severity: 3,
+    description: "Refrigerator electrical fire"
+  },
+  [HazardType.BlenderMixer]: {
+    baseFireClass: FireClass.C,
+    ignitionChance: 0.20,
+    severity: 2,
+    description: "Blender electrical fire"
+  },
+  [HazardType.ElectricHeater]: {
+    baseFireClass: FireClass.C,
+    ignitionChance: 0.22,
+    severity: 3,
+    description: "Electric heater fire"
+  }
+};
+
+// Random Fire Spawning Utilities
+export const getRandomFireClass = (availableClasses: FireClass[] = [FireClass.A, FireClass.B, FireClass.C, FireClass.K]): FireClass => {
+  return availableClasses[Math.floor(Math.random() * availableClasses.length)];
+};
+
+export const getMatchingExtinguisherType = (fireClass: FireClass): InteractiveObjectType => {
+  switch (fireClass) {
+    case FireClass.A: return InteractiveObjectType.ClassAExtinguisher;
+    case FireClass.B: return InteractiveObjectType.ClassBExtinguisher;
+    case FireClass.C: return InteractiveObjectType.ClassCExtinguisher;
+    case FireClass.D: return InteractiveObjectType.ClassDExtinguisher;
+    case FireClass.K: return InteractiveObjectType.ClassKExtinguisher;
+    default: return InteractiveObjectType.ClassAExtinguisher;
+  }
+};
+
+export const generateRandomFireHazards = (config: RandomFireConfig): HazardState[] => {
+  const fireCount = Math.floor(Math.random() * (config.maxFires - config.minFires + 1)) + config.minFires;
+  const hazards: HazardState[] = [];
+  const usedPositions = new Set<string>();
+  
+  for (let i = 0; i < fireCount && i < config.spawnPositions.length; i++) {
+    // Select random position that hasn't been used
+    let positionIndex: number;
+    let positionKey: string;
+    let attempts = 0;
+    
+    do {
+      positionIndex = Math.floor(Math.random() * config.spawnPositions.length);
+      positionKey = `${positionIndex}`;
+      attempts++;
+    } while (usedPositions.has(positionKey) && attempts < 50);
+    
+    if (attempts >= 50) break; // Prevent infinite loop
+    
+    usedPositions.add(positionKey);
+    const position = config.spawnPositions[positionIndex];
+    const fireClass = getRandomFireClass(config.availableClasses);
+    
+    // Determine hazard type based on fire class
+    let hazardType: HazardType;
+    switch (fireClass) {
+      case FireClass.A:
+        hazardType = HazardType.ClassAFire;
+        break;
+      case FireClass.B:
+        hazardType = HazardType.ClassBFire;
+        break;
+      case FireClass.C:
+        hazardType = HazardType.ClassCFire;
+        break;
+      case FireClass.D:
+        hazardType = HazardType.ClassDFire;
+        break;
+      case FireClass.K:
+        hazardType = HazardType.ClassKFire;
+        break;
+      default:
+        hazardType = HazardType.ClassAFire;
+    }
+    
+    hazards.push({
+      id: `random_fire_${i}`,
+      type: hazardType,
+      fireClass: fireClass,
+      position: position,
+      isActive: true,
+      severity: Math.floor(Math.random() * 3) + 1, // Random severity 1-3
+      isSmoking: Math.random() > 0.5, // 50% chance of smoking
+      isExtinguished: false
+    });
+  }
+  
+  return hazards;
+};
+
+export const generateMatchingExtinguishers = (fires: HazardState[], spawnPositions: Array<{x: number, y: number, z: number}>): InteractiveObject[] => {
+  const extinguishers: InteractiveObject[] = [];
+  const fireClasses = fires.map(fire => fire.fireClass || FireClass.A);
+  const uniqueClasses = Array.from(new Set(fireClasses)); // Fix: Convert Set to Array
+  
+  uniqueClasses.forEach((fireClass, index) => {
+    if (index < spawnPositions.length) {
+      const position = spawnPositions[index];
+      extinguishers.push({
+        id: `matching_extinguisher_${index}`,
+        type: getMatchingExtinguisherType(fireClass),
+        fireClass: fireClass,
+        position: position,
+        isActive: true,
+        isCollected: false
+      });
+    }
+  });
+  
+  return extinguishers;
+};
+
+export const generateFlammableAppliances = (roomType: string, count: number, positions: Array<{x: number, y: number, z: number}>): ApplianceHazard[] => {
+  const appliances: ApplianceHazard[] = [];
+  let availableAppliances: HazardType[] = [];
+  
+  // Select appliances based on room type
+  switch (roomType.toLowerCase()) {
+    case 'kitchen':
+      availableAppliances = [HazardType.Microwave, HazardType.Toaster, HazardType.Coffeemaker, HazardType.BlenderMixer, HazardType.Refrigerator];
+      break;
+    case 'livingroom':
+    case 'living room':
+      availableAppliances = [HazardType.Television, HazardType.ComputerTower, HazardType.AirConditioner, HazardType.ElectricHeater];
+      break;
+    case 'bedroom':
+      availableAppliances = [HazardType.Television, HazardType.ComputerTower, HazardType.AirConditioner, HazardType.ElectricHeater];
+      break;
+    case 'laundry':
+      availableAppliances = [HazardType.WashingMachine, HazardType.ElectricHeater];
+      break;
+    default:
+      availableAppliances = Object.keys(APPLIANCE_FIRE_CONFIG) as HazardType[];
+  }
+  
+  for (let i = 0; i < Math.min(count, positions.length, availableAppliances.length); i++) {
+    const applianceType = availableAppliances[i % availableAppliances.length];
+    
+    // Fix: Add type safety check for appliance config
+    if (!(applianceType in APPLIANCE_FIRE_CONFIG)) {
+      continue; // Skip if config doesn't exist for this appliance type
+    }
+    
+    const config = APPLIANCE_FIRE_CONFIG[applianceType as keyof typeof APPLIANCE_FIRE_CONFIG];
+    const position = positions[i];
+    
+    // Random chance this appliance will catch fire
+    const willCatchFire = Math.random() < config.ignitionChance;
+    
+    if (willCatchFire) {
+      appliances.push({
+        id: `appliance_${applianceType}_${i}`,
+        type: applianceType,
+        fireClass: config.baseFireClass,
+        applianceType: applianceType,
+        ignitionChance: config.ignitionChance,
+        baseFireClass: config.baseFireClass,
+        position: position,
+        isActive: true,
+        severity: config.severity,
+        isSmoking: Math.random() > 0.7, // 30% chance of smoking
+        isExtinguished: false
+      });
+    }
+  }
+  
+  return appliances;
+};
 
 // Level data for the game
 export const LEVELS: Record<Level, LevelData> = {
@@ -10,6 +256,7 @@ export const LEVELS: Record<Level, LevelData> = {
       {
         id: "stove1",
         type: HazardType.StoveTop,
+        fireClass: FireClass.K, // Cooking oils/grease fire
         position: { x: 2, y: 0.8, z: -2 },
         isActive: true,
         severity: 2,
@@ -19,6 +266,7 @@ export const LEVELS: Record<Level, LevelData> = {
       {
         id: "outlet1",
         type: HazardType.ElectricalOutlet,
+        fireClass: FireClass.C, // Electrical equipment fire
         position: { x: -2, y: 0.4, z: -3 },
         isActive: true,
         severity: 1,
@@ -29,7 +277,8 @@ export const LEVELS: Record<Level, LevelData> = {
     objects: [
       {
         id: "extinguisher1",
-        type: InteractiveObjectType.FireExtinguisher,
+        type: InteractiveObjectType.ClassKExtinguisher, // Fix: Use correct enum value
+        fireClass: FireClass.K,
         position: { x: -3, y: 0, z: 3 },
         isActive: true,
         isCollected: false
@@ -124,6 +373,7 @@ export const LEVELS: Record<Level, LevelData> = {
       {
         id: "fireplace1",
         type: HazardType.Fireplace,
+        fireClass: FireClass.A, // Wood burning
         position: { x: 0, y: 0.5, z: -4 },
         isActive: true,
         severity: 2,
@@ -133,6 +383,7 @@ export const LEVELS: Record<Level, LevelData> = {
       {
         id: "candle1",
         type: HazardType.Candle,
+        fireClass: FireClass.A, // Wax and wick
         position: { x: 2, y: 0.8, z: 0 },
         isActive: true,
         severity: 1,
@@ -142,6 +393,7 @@ export const LEVELS: Record<Level, LevelData> = {
       {
         id: "heater1",
         type: HazardType.SpacerHeater,
+        fireClass: FireClass.C, // Electrical equipment
         position: { x: -3, y: 0.5, z: 2 },
         isActive: true,
         severity: 2,
@@ -152,7 +404,7 @@ export const LEVELS: Record<Level, LevelData> = {
     objects: [
       {
         id: "extinguisher2",
-        type: InteractiveObjectType.FireExtinguisher,
+        type: InteractiveObjectType.ClassAExtinguisher, // Fix: Use correct enum value
         position: { x: 4, y: 0, z: 4 },
         isActive: true,
         isCollected: false
@@ -268,7 +520,7 @@ export const LEVELS: Record<Level, LevelData> = {
     objects: [
       {
         id: "extinguisher3",
-        type: InteractiveObjectType.FireExtinguisher,
+        type: InteractiveObjectType.ClassCExtinguisher,
         position: { x: -4, y: 0, z: 4 },
         isActive: true,
         isCollected: false
@@ -367,7 +619,7 @@ export const LEVELS: Record<Level, LevelData> = {
     objects: [
       {
         id: "waterExt1",
-        type: InteractiveObjectType.WaterExtinguisher,
+        type: InteractiveObjectType.ClassAExtinguisher,
         position: { x: -2, y: 0, z: 3 },
         isActive: true,
         isCollected: false
@@ -469,21 +721,21 @@ export const LEVELS: Record<Level, LevelData> = {
     objects: [
       {
         id: "waterExt2",
-        type: InteractiveObjectType.WaterExtinguisher,
+        type: InteractiveObjectType.ClassAExtinguisher,
         position: { x: -3, y: 0, z: 3 },
         isActive: true,
         isCollected: false
       },
       {
         id: "foamExt1",
-        type: InteractiveObjectType.FoamExtinguisher,
+        type: InteractiveObjectType.ClassBExtinguisher,
         position: { x: 0, y: 0, z: 3 },
         isActive: true,
         isCollected: false
       },
       {
         id: "co2Ext1",
-        type: InteractiveObjectType.CO2Extinguisher,
+        type: InteractiveObjectType.ClassCExtinguisher,
         position: { x: 3, y: 0, z: 3 },
         isActive: true,
         isCollected: false
@@ -578,7 +830,7 @@ export const LEVELS: Record<Level, LevelData> = {
     objects: [
       {
         id: "wetChemExt1",
-        type: InteractiveObjectType.WetChemicalExtinguisher,
+        type: InteractiveObjectType.ClassKExtinguisher,
         position: { x: -4, y: 0, z: 4 },
         isActive: true,
         isCollected: false
@@ -690,7 +942,7 @@ export const LEVELS: Record<Level, LevelData> = {
     objects: [
       {
         id: "powderExt1",
-        type: InteractiveObjectType.PowderExtinguisher,
+        type: InteractiveObjectType.ClassDExtinguisher,
         position: { x: -5, y: 0, z: 4 },
         isActive: true,
         isCollected: false
@@ -801,28 +1053,28 @@ export const LEVELS: Record<Level, LevelData> = {
     objects: [
       {
         id: "masterWater",
-        type: InteractiveObjectType.WaterExtinguisher,
+        type: InteractiveObjectType.ClassAExtinguisher,
         position: { x: -6, y: 0, z: 5 },
         isActive: true,
         isCollected: false
       },
       {
         id: "masterFoam",
-        type: InteractiveObjectType.FoamExtinguisher,
+        type: InteractiveObjectType.ClassBExtinguisher,
         position: { x: -3, y: 0, z: 5 },
         isActive: true,
         isCollected: false
       },
       {
         id: "masterCO2",
-        type: InteractiveObjectType.CO2Extinguisher,
+        type: InteractiveObjectType.ClassCExtinguisher,
         position: { x: 0, y: 0, z: 5 },
         isActive: true,
         isCollected: false
       },
       {
         id: "masterWetChem",
-        type: InteractiveObjectType.WetChemicalExtinguisher,
+        type: InteractiveObjectType.ClassKExtinguisher,
         position: { x: 3, y: 0, z: 5 },
         isActive: true,
         isCollected: false

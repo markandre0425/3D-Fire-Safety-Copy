@@ -11,9 +11,21 @@ import SmokeZone from "./SmokeZone";
 import { useFireSafety } from "@/lib/stores/useFireSafety";
 import { usePlayer } from "@/lib/stores/usePlayer";
 import { useKeyboardControls } from "@react-three/drei";
-import { Controls } from "@/lib/types";
+import { Controls, FireClass, InteractiveObjectType } from "@/lib/types";
 import { GAME_CONSTANTS } from "@/lib/constants";
 // import { getLevelConfig } from "@/lib/levelConfigs";
+
+// Helper function to get fire class from extinguisher type
+const getExtinguisherFireClass = (extinguisherType: InteractiveObjectType): FireClass => {
+  switch (extinguisherType) {
+    case InteractiveObjectType.ClassAExtinguisher: return FireClass.A;
+    case InteractiveObjectType.ClassBExtinguisher: return FireClass.B;
+    case InteractiveObjectType.ClassCExtinguisher: return FireClass.C;
+    case InteractiveObjectType.ClassDExtinguisher: return FireClass.D;
+    case InteractiveObjectType.ClassKExtinguisher: return FireClass.K;
+    default: return FireClass.A; // Default fallback
+  }
+};
 
 export default function Level() {
   const { 
@@ -92,31 +104,28 @@ export default function Level() {
     if (actionPressed) {
       // Check for nearby interactive objects
       interactiveObjects.forEach(obj => {
-        if (obj.isCollected || (obj.type === "SmokeDetector" && obj.isActive)) return;
+        if (obj.isCollected || (obj.type === InteractiveObjectType.SmokeDetector && obj.isActive)) return;
         
         const dx = playerState.position.x - obj.position.x;
         const dz = playerState.position.z - obj.position.z;
         const distanceSquared = dx * dx + dz * dz;
         
         if (distanceSquared < GAME_CONSTANTS.INTERACTION_DISTANCE * GAME_CONSTANTS.INTERACTION_DISTANCE) {
-          if (obj.type === "FireExtinguisher" || 
-              obj.type === "WaterExtinguisher" ||
-              obj.type === "FoamExtinguisher" ||
-              obj.type === "CO2Extinguisher" ||
-              obj.type === "PowderExtinguisher" ||
-              obj.type === "WetChemicalExtinguisher") {
+          if (obj.type === InteractiveObjectType.ClassAExtinguisher || 
+              obj.type === InteractiveObjectType.ClassBExtinguisher ||
+              obj.type === InteractiveObjectType.ClassCExtinguisher ||
+              obj.type === InteractiveObjectType.ClassDExtinguisher ||
+              obj.type === InteractiveObjectType.ClassKExtinguisher) {
             collectObject(obj.id);
-          } else if (obj.type === "SmokeDetector") {
+          } else if (obj.type === InteractiveObjectType.SmokeDetector) {
             activateSmokeDetector(obj.id);
           }
           
           console.log(`Interacted with ${obj.type}: ${obj.id}`);
         }
       });
-      
-
     }
-      }, [actionPressed, interactiveObjects, playerState.position, collectObject, activateSmokeDetector]);
+  }, [actionPressed, interactiveObjects, playerState.position, collectObject, activateSmokeDetector]);
   
   // Handle fire extinguisher usage with enhanced effects
   useEffect(() => {
@@ -125,6 +134,8 @@ export default function Level() {
       
       // Check for nearby hazards to extinguish
       let extinguishedAny = false;
+      const playerExtinguisherClass = playerState.extinguisherType ? getExtinguisherFireClass(playerState.extinguisherType) : null;
+      
       hazards.forEach(hazard => {
         if (hazard.isExtinguished || !hazard.isActive) return;
         
@@ -133,9 +144,17 @@ export default function Level() {
         const distanceSquared = dx * dx + dz * dz;
         
         if (distanceSquared < GAME_CONSTANTS.EXTINGUISHER_RANGE * GAME_CONSTANTS.EXTINGUISHER_RANGE) {
-          extinguishHazard(hazard.id);
-          extinguishedAny = true;
-          console.log(`Extinguished hazard: ${hazard.id}`);
+          const hazardFireClass = hazard.fireClass || FireClass.A;
+          
+          // Check if extinguisher class matches fire class
+          if (playerExtinguisherClass === hazardFireClass) {
+            extinguishHazard(hazard.id);
+            extinguishedAny = true;
+            console.log(`✅ Extinguished Class ${hazardFireClass} fire with Class ${playerExtinguisherClass} extinguisher: ${hazard.id}`);
+          } else {
+            console.log(`❌ Wrong extinguisher! Class ${hazardFireClass} fire needs Class ${hazardFireClass} extinguisher, but you have Class ${playerExtinguisherClass}`);
+            // Could add UI feedback here for wrong extinguisher type
+          }
         }
       });
       
@@ -183,13 +202,10 @@ export default function Level() {
       
 
       
-      {/* Fire extinguisher effects */}
-      {playerState.hasExtinguisher && (
+      {/* Extinguisher effect when player is extinguishing */}
+      {isExtinguishing && (
         <ExtinguisherEffect
           isActive={isExtinguishing}
-          playerPosition={playerState.position}
-          playerRotation={playerState.rotation}
-          extinguisherType={playerState.extinguisherType || undefined}
         />
       )}
       

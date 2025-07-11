@@ -27,26 +27,34 @@ app.use(express.urlencoded({ extended: false }));
     serveStatic(app);
   }
 
-  // Set the base port to 5000
-  const basePort = parseInt(process.env.PORT || "5000", 10);
+  // Set the desired port (default to 3000)
+  const desiredPort = parseInt(process.env.PORT || "3000", 10);
   
-  // Configure portfinder to start looking from the base port
-  portfinder.basePort = basePort;
-  
-  try {
-    // Find an available port
-    const port = await portfinder.getPortPromise();
-    
-    // Start the server on the available port
+  // Option 1: Force exact port (will fail if busy)
+  if (process.env.FORCE_PORT === "true") {
     server.listen({
-      port,
+      port: desiredPort,
       host: "127.0.0.1",
     }, () => {
-      log(`Port ${basePort} was ${port !== basePort ? 'busy, now ' : ''}serving on port ${port}`);
+      log(`Server forced to run on port ${desiredPort}`);
     });
-  } catch (err) {
-    console.error("Failed to find an available port:", err);
-    process.exit(1);
+  } else {
+    // Option 2: Find available port starting from desired port
+    portfinder.basePort = desiredPort;
+    
+    try {
+      const port = await portfinder.getPortPromise();
+      
+      server.listen({
+        port,
+        host: "127.0.0.1",
+      }, () => {
+        log(`Port ${desiredPort} was ${port !== desiredPort ? 'busy, now ' : ''}serving on port ${port}`);
+      });
+    } catch (err) {
+      console.error("Failed to find an available port:", err);
+      process.exit(1);
+    }
   }
 })();
 
